@@ -1,12 +1,14 @@
-// SafeHer service worker: precaches the app shell so it works fully offline.
+// Service worker: precaches the app shell so it works fully offline.
 // Bump CACHE_NAME whenever you add/rename files in ASSETS.
-const CACHE_NAME = 'safeher-v2';
+const CACHE_NAME = 'calc-v3';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.json',
+  './icons/icon.svg',
+  './icons/favicon-32.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',

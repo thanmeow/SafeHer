@@ -3,30 +3,50 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>SafeHer</title>
-  <meta name="description" content="Private safety toolkit: room safety check, on-device evidence vault and SOS setup.">
-  <meta name="theme-color" content="#f7f5fb" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#121018" media="(prefers-color-scheme: dark)">
+  <title>Calculator</title>
+  <meta name="description" content="Calculator">
+  <meta name="theme-color" content="#F7F7F5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
 
   <!-- iOS "Add to Home Screen" -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="SafeHer">
+  <meta name="apple-mobile-web-app-title" content="Calculator">
   <meta name="format-detection" content="telephone=no">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<!-- ============ PIN LOCK ============ -->
-<section id="lock" class="lock" aria-label="PIN lock">
-  <div class="lock-inner">
-    <img src="icons/icon-192.png" class="lock-logo" alt="" width="72" height="72">
-    <h1 id="lock-title">Enter your PIN</h1>
+<!-- ============ CALCULATOR (always the first screen) ============ -->
+<section id="calc" class="calc" hidden aria-label="Calculator">
+  <div class="calc-display" id="calc-display" aria-live="polite">0</div>
+  <div class="calc-keys" id="calc-keys">
+    <button type="button" class="fn" data-k="C" aria-label="All clear">AC</button>
+    <button type="button" class="fn" data-k="neg" aria-label="Plus or minus">±</button>
+    <button type="button" class="fn" data-k="%" aria-label="Percent">%</button>
+    <button type="button" class="op" data-k="/" aria-label="Divide">÷</button>
+    <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+    <button type="button" class="op" data-k="*" aria-label="Multiply">×</button>
+    <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+    <button type="button" class="op" data-k="-" aria-label="Subtract">−</button>
+    <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+    <button type="button" class="op" data-k="+" aria-label="Add">+</button>
+    <button type="button" class="zero" data-k="0">0</button>
+    <button type="button" data-k="." aria-label="Decimal point">.</button>
+    <button type="button" class="op" data-k="=" aria-label="Equals">=</button>
+  </div>
+</section>
+
+<!-- ============ PIN SETUP (first launch, and Change PIN) ============ -->
+<section id="lock" class="lock" hidden aria-label="Set PIN">
+  <div class="lock-inner" id="lock-pin">
+    <h1 id="lock-title">Set a 4-digit PIN</h1>
     <p id="lock-msg" class="lock-msg" aria-live="polite">&nbsp;</p>
     <div class="pin-dots" id="pin-dots" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     <div class="keypad" id="keypad">
@@ -36,33 +56,21 @@
       <button type="button" id="lock-cancel" class="key-text" hidden>Cancel</button>
       <span id="lock-spacer"></span>
       <button type="button" data-d="0">0</button>
-      <button type="button" data-d="del" class="key-text" aria-label="Delete">⌫</button>
+      <button type="button" data-d="del" class="key-text" aria-label="Delete">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M17 9l-6 6M11 9l6 6"/></svg>
+      </button>
     </div>
-    <button type="button" class="link-btn" id="forgot-pin">Forgot PIN?</button>
+  </div>
+
+  <div class="lock-inner lock-done" id="lock-done" hidden>
+    <h1>PIN saved</h1>
+    <p>The app opens as a calculator. To get in, type your PIN and press <strong>=</strong>.</p>
+    <p class="muted">If you forget your PIN, hold <strong>AC</strong> for 5 seconds. This erases everything and lets you start again.</p>
+    <button type="button" class="btn primary block" id="lock-continue">Open calculator</button>
   </div>
 </section>
 
-<!-- ============ QUICK EXIT DISGUISE ============ -->
-<section id="calc" class="calc" hidden aria-label="Calculator">
-  <div class="calc-display" id="calc-display">0</div>
-  <div class="calc-keys" id="calc-keys">
-    <button type="button" class="fn" data-k="C">AC</button>
-    <button type="button" class="fn" data-k="neg">±</button>
-    <button type="button" class="fn" data-k="%">%</button>
-    <button type="button" class="op" data-k="/">÷</button>
-    <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
-    <button type="button" class="op" data-k="*">×</button>
-    <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
-    <button type="button" class="op" data-k="-">−</button>
-    <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
-    <button type="button" class="op" data-k="+">+</button>
-    <button type="button" class="zero" data-k="0">0</button>
-    <button type="button" data-k=".">.</button>
-    <button type="button" class="op" data-k="=">=</button>
-  </div>
-</section>
-
-<!-- ============ APP ============ -->
+<!-- ============ APP (after unlock) ============ -->
 <div id="app" hidden>
   <header class="topbar">
     <button type="button" id="back-btn" class="icon-btn" aria-label="Back" hidden>
@@ -75,57 +83,66 @@
 
     <!-- HOME -->
     <section class="view" data-view="home" data-title="SafeHer" data-tab="home">
-      <div class="hero">
-        <p class="hero-kicker">You're in control</p>
-        <p class="hero-text">Everything you save stays on this phone. Nothing is uploaded.</p>
-      </div>
+      <p class="intro">Everything you save stays on this phone. Nothing is uploaded.</p>
 
-      <button type="button" class="feature" data-go="room">
-        <span class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></span>
-        <span class="feature-body"><strong>Room Safety Check</strong><span>Look for hidden cameras step by step</span></span>
-      </button>
-      <button type="button" class="feature" data-go="vault">
-        <span class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
-        <span class="feature-body"><strong>Evidence Vault</strong><span>Record incidents with photos, privately</span></span>
-      </button>
-      <button type="button" class="feature" data-go="sos">
-        <span class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></span>
-        <span class="feature-body"><strong>SOS Setup</strong><span>One-press emergency shortcut</span></span>
-      </button>
+      <ul class="group">
+        <li><button type="button" class="row" data-go="room">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></span>
+          <span class="row-text"><span class="row-title">Room check</span><span class="row-sub">Look for hidden cameras</span></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button></li>
+        <li><button type="button" class="row" data-go="vault">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <span class="row-text"><span class="row-title">Evidence vault</span><span class="row-sub">Record incidents and photos</span></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button></li>
+        <li><button type="button" class="row" data-go="sos">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
+          <span class="row-text"><span class="row-title">SOS setup</span><span class="row-sub">Set up a one-press emergency shortcut</span></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button></li>
+      </ul>
 
-      <a class="btn danger block call-112" href="tel:112">Call 112 — Emergency</a>
+      <a class="btn danger block" href="tel:112">Call 112</a>
 
-      <div class="card subtle">
-        <h2 class="card-title">Quick Exit</h2>
-        <p>Tap <strong>Quick exit</strong> at any time to instantly show a calculator. To come back, type your PIN on the calculator and press <strong>=</strong>.</p>
-        <div class="btn-row">
-          <button type="button" class="btn" id="lock-now">Lock now</button>
-          <button type="button" class="btn" id="change-pin">Change PIN</button>
-        </div>
-      </div>
+      <h2 class="group-title">Privacy</h2>
+      <ul class="group">
+        <li><button type="button" class="row" id="lock-now">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <span class="row-text"><span class="row-title">Lock now</span><span class="row-sub">Go back to the calculator</span></span>
+        </button></li>
+        <li><button type="button" class="row" id="change-pin">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M17 6l2 2M14 9l2 2"/></svg></span>
+          <span class="row-text"><span class="row-title">Change PIN</span></span>
+        </button></li>
+      </ul>
+      <p class="group-note">To open the app from the calculator, type your PIN and press =. Quick exit, or leaving the app for over a minute, returns to the calculator.</p>
     </section>
 
     <!-- ROOM: WARNING -->
-    <section class="view" data-view="room-warn" data-title="Room Safety Check" data-tab="room" data-parent="home" hidden>
+    <section class="view" data-view="room-warn" data-title="Room check" data-tab="room" data-parent="home" hidden>
       <div class="card warn">
-        <h2 class="card-title">Before you start</h2>
-        <p class="lead">This tool helps you look for hidden cameras but <strong>cannot guarantee a room is safe</strong>. Results may not be accurate.</p>
-        <p>If something feels wrong, trust your instinct: leave and ask for a different room or call 112.</p>
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>
+          Before you start
+        </h2>
+        <p>This tool helps you look for hidden cameras but <strong>cannot guarantee a room is safe</strong>. Results may not be accurate.</p>
+        <p>If something feels wrong, leave and ask for another room, or call 112.</p>
       </div>
       <button type="button" class="btn primary block" id="room-ack">I understand</button>
     </section>
 
     <!-- ROOM: TYPE PICKER -->
-    <section class="view" data-view="room-type" data-title="Choose room type" data-tab="room" data-parent="home" hidden>
-      <p class="muted">We'll show the hiding spots most common for this kind of room.</p>
-      <div class="choice-list" id="room-type-list"></div>
+    <section class="view" data-view="room-type" data-title="Room type" data-tab="room" data-parent="home" hidden>
+      <p class="intro">Choose the kind of room. Each type has its own list of places to check.</p>
+      <ul class="group" id="room-type-list"></ul>
     </section>
 
     <!-- ROOM: CHECK -->
     <section class="view" data-view="room-check" data-title="Room check" data-tab="room" data-parent="room-type" hidden>
       <div class="room-head">
         <div class="room-head-row">
-          <span class="chip" id="rc-room">Hotel room</span>
+          <span class="room-name" id="rc-room">Hotel room</span>
           <span id="rc-progress" class="progress-text">0/12 checked</span>
         </div>
         <div class="progress" role="progressbar" aria-labelledby="rc-progress"><div class="progress-bar" id="rc-bar"></div></div>
@@ -141,7 +158,7 @@
       <!-- Checklist -->
       <div class="panel" data-panel="list">
         <ul class="spot-list" id="spot-list"></ul>
-        <button type="button" class="btn ghost block" id="rc-reset">Start this room again</button>
+        <button type="button" class="btn block" id="rc-reset">Start this room again</button>
       </div>
 
       <!-- Two-way mirror -->
@@ -150,16 +167,16 @@
           <h2 class="card-title">Two-way mirror: fingernail test</h2>
           <ol class="steps">
             <li>Place the tip of your fingernail straight against the mirror.</li>
-            <li><strong>Gap between your nail and its reflection</strong> → most likely a normal mirror (the reflective layer is behind the glass).</li>
-            <li><strong>Nail seems to touch its reflection, no gap</strong> → it could be a two-way mirror. Be cautious.</li>
+            <li><strong>Gap between your nail and its reflection:</strong> most likely a normal mirror. The reflective layer is behind the glass.</li>
+            <li><strong>No gap:</strong> it could be a two-way mirror. Be cautious.</li>
           </ol>
-          <p class="muted small">Some ordinary mirrors also show no gap, so double-check: turn off the lights, cup your hands around your eyes and press them against the mirror — if you can see into a space behind it, it's two-way. A mirror that sounds hollow when tapped, or is set <em>into</em> the wall instead of hanging on it, is also a warning sign.</p>
+          <p class="muted">Some normal mirrors also show no gap. To double-check, turn off the lights, cup your hands around your eyes and press them against the mirror. If you can see a space behind it, it is two-way. A mirror that sounds hollow, or is set into the wall instead of hanging on it, is also a warning sign.</p>
         </div>
         <div class="btn-row">
-          <button type="button" class="btn ok" data-mirror="fine">Gap — looks fine</button>
-          <button type="button" class="btn danger" data-mirror="sus">No gap — suspicious</button>
+          <button type="button" class="btn" data-mirror="fine">Gap: looks fine</button>
+          <button type="button" class="btn" data-mirror="sus">No gap: suspicious</button>
         </div>
-        <p class="muted small" id="mirror-result"></p>
+        <p class="muted" id="mirror-result"></p>
       </div>
 
       <!-- Lens reflection -->
@@ -167,10 +184,10 @@
         <div class="card">
           <h2 class="card-title">Lens reflection scan</h2>
           <ol class="steps">
-            <li>Turn off the room lights and close the curtains.</li>
-            <li>Shine a torch or a second phone's flashlight from <strong>right beside your eyes</strong>.</li>
-            <li>Point this phone at suspect objects and <strong>move slowly</strong>. Camera lenses reflect light back as a small, sharp, bright dot.</li>
-            <li>Red circles mark small, very bright spots. Check those areas closely — many will be harmless (screws, LEDs, glossy plastic).</li>
+            <li>Turn off the lights and close the curtains.</li>
+            <li>Hold a torch or a second phone's flashlight <strong>right beside your eyes</strong>.</li>
+            <li>Point this phone at objects and <strong>move slowly</strong>. A camera lens reflects light back as a small, sharp, bright dot.</li>
+            <li>Red circles mark small, very bright spots. Check those areas closely. Many will be harmless, such as screws, LEDs or glossy plastic.</li>
           </ol>
         </div>
         <div class="cam-wrap" id="lens-wrap">
@@ -196,10 +213,10 @@
           <h2 class="card-title">Infrared (night-vision) check</h2>
           <ol class="steps">
             <li>Make the room as dark as possible.</li>
-            <li>This uses the <strong>front camera</strong> — on many iPhones the rear camera filters out infrared.</li>
-            <li>Slowly pan around the room. Look for <strong>purple or white glowing dots</strong> that you can't see with your eyes.</li>
+            <li>This uses the <strong>front camera</strong>. On many iPhones the rear camera filters out infrared.</li>
+            <li>Pan slowly around the room. Look for <strong>purple or white glowing dots</strong> you can't see with your eyes.</li>
           </ol>
-          <p class="muted small">Tip: test first by pointing a TV remote at the front camera and pressing a button. If you see the remote's light flash, your camera can see infrared.</p>
+          <p class="muted">Test first: point a TV remote at the front camera and press a button. If you see the remote's light flash, your camera can see infrared.</p>
         </div>
         <div class="cam-wrap">
           <video id="ir-video" playsinline muted autoplay></video>
@@ -218,25 +235,23 @@
     </section>
 
     <!-- VAULT: LIST -->
-    <section class="view" data-view="vault" data-title="Evidence Vault" data-tab="vault" hidden>
-      <div class="notice">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-        <span>Stored only on this device, never uploaded. Deleting the app or clearing Safari data deletes it — export regularly.</span>
-      </div>
+    <section class="view" data-view="vault" data-title="Evidence vault" data-tab="vault" hidden>
+      <p class="intro">Stored only on this phone and never uploaded. Deleting the app or clearing Safari data deletes it, so export regularly.</p>
       <div class="btn-row">
-        <button type="button" class="btn primary" id="add-incident">+ Add incident</button>
+        <button type="button" class="btn primary" id="add-incident">Add incident</button>
         <button type="button" class="btn" id="export-btn">Export report</button>
       </div>
-      <ul class="incident-list" id="incident-list"></ul>
+      <ul class="group incident-list" id="incident-list"></ul>
       <p class="empty" id="vault-empty" hidden>No incidents saved yet.</p>
 
-      <div class="card helplines">
-        <h2 class="card-title">Helplines (India)</h2>
-        <a class="helpline" href="tel:112"><strong>112</strong><span>Emergency</span></a>
-        <a class="helpline" href="tel:181"><strong>181</strong><span>Women helpline</span></a>
-        <a class="helpline" href="tel:1930"><strong>1930</strong><span>Cyber crime helpline</span></a>
-        <a class="helpline" href="https://cybercrime.gov.in" target="_blank" rel="noopener"><strong>cybercrime.gov.in</strong><span>Report online</span></a>
-      </div>
+      <h2 class="group-title">Helplines (India)</h2>
+      <ul class="group">
+        <li><a class="row helpline" href="tel:112"><span class="row-text"><span class="row-title">112</span><span class="row-sub">Emergency</span></span></a></li>
+        <li><a class="row helpline" href="tel:181"><span class="row-text"><span class="row-title">181</span><span class="row-sub">Women helpline</span></span></a></li>
+        <li><a class="row helpline" href="tel:1930"><span class="row-text"><span class="row-title">1930</span><span class="row-sub">Cyber crime helpline</span></span></a></li>
+        <li><a class="row helpline" href="https://cybercrime.gov.in" target="_blank" rel="noopener"><span class="row-text"><span class="row-title">cybercrime.gov.in</span><span class="row-sub">Report online</span></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a></li>
+      </ul>
     </section>
 
     <!-- VAULT: FORM -->
@@ -253,12 +268,12 @@
           </select>
         </label>
         <label class="field">
-          <span>Date &amp; time</span>
+          <span>Date and time</span>
           <input type="datetime-local" name="datetime" required>
         </label>
         <label class="field">
           <span>Location</span>
-          <input type="text" name="location" placeholder="e.g. Hotel name, room 204, city" autocomplete="off">
+          <input type="text" name="location" placeholder="For example: hotel name, room 204, city" autocomplete="off">
         </label>
         <div id="camera-fields">
           <label class="field">
@@ -267,16 +282,16 @@
           </label>
           <label class="field">
             <span>Where was it?</span>
-            <input type="text" name="spot" placeholder="e.g. Smoke detector" autocomplete="off">
+            <input type="text" name="spot" placeholder="For example: smoke detector" autocomplete="off">
           </label>
         </div>
         <label class="field">
-          <span>Person involved <em>(optional)</em></span>
-          <input type="text" name="person" placeholder="Name, username, description" autocomplete="off">
+          <span>Person involved (optional)</span>
+          <input type="text" name="person" placeholder="Name, username or description" autocomplete="off">
         </label>
         <label class="field">
           <span>What happened</span>
-          <textarea name="description" rows="6" placeholder="Write down what happened, in your own words."></textarea>
+          <textarea name="description" rows="6" placeholder="Describe what happened in your own words."></textarea>
         </label>
 
         <fieldset class="field photos">
@@ -297,27 +312,27 @@
       <div id="detail-body"></div>
       <div class="btn-row">
         <button type="button" class="btn primary" id="detail-edit">Edit</button>
-        <button type="button" class="btn danger-outline" id="detail-delete">Delete</button>
+        <button type="button" class="btn danger" id="detail-delete">Delete</button>
       </div>
     </section>
 
     <!-- VAULT: REPORT -->
     <section class="view" data-view="report" data-title="Report" data-tab="vault" data-parent="vault" hidden>
       <div class="no-print">
-        <p class="muted small">In the print screen, pinch out on the preview (or tap Share) to save it as a PDF.</p>
-        <button type="button" class="btn primary block" id="print-btn">Print / Save as PDF</button>
+        <p class="muted">In the print screen, pinch out on the preview or tap Share to save it as a PDF.</p>
+        <button type="button" class="btn primary block" id="print-btn">Print or save as PDF</button>
       </div>
       <article id="report-doc" class="report-doc"></article>
     </section>
 
     <!-- SOS -->
-    <section class="view" data-view="sos" data-title="SOS Setup" data-tab="sos" hidden>
+    <section class="view" data-view="sos" data-title="SOS setup" data-tab="sos" hidden>
       <div class="card">
         <h2 class="card-title">One-press SOS</h2>
-        <p>The SOS Alert shortcut runs with a single press, even from the Lock Screen. When triggered it can share your current location with your trusted contacts by message and start a call to 112.</p>
-        <a class="btn primary block" id="sos-install" href="#" target="_blank" rel="noopener">Install SOS Shortcut</a>
-        <p class="muted small" id="sos-config-warning" hidden>The shortcut link hasn't been set up yet (SOS_SHORTCUT_URL in app.js).</p>
-        <h3 class="card-title" style="margin-top:16px">After installing</h3>
+        <p>The SOS Alert shortcut runs with one press, even from the Lock Screen. It can send your location to your trusted contacts and start a call to 112.</p>
+        <a class="btn primary block" id="sos-install" href="#" target="_blank" rel="noopener">Install SOS shortcut</a>
+        <p class="muted" id="sos-config-warning" hidden>The shortcut link is not set up yet (SOS_SHORTCUT_URL in app.js).</p>
+        <h3 class="card-subtitle">After installing</h3>
         <ol class="steps">
           <li>Open <strong>Shortcuts</strong>, tap <strong>⋯</strong> on <strong>SOS Alert</strong>, tap <strong>Recipients</strong> and add your emergency contacts, then make sure <strong>Show When Run</strong> is off.</li>
           <li>Run it once and choose <strong>Always Allow</strong> for location and messages.</li>
@@ -325,61 +340,63 @@
         </ol>
       </div>
 
-      <h2 class="section-title">Set up a trigger</h2>
-      <details class="guide">
-        <summary>Action Button <span class="muted">iPhone 15 Pro and later</span></summary>
-        <ol class="steps">
-          <li>Open <strong>Settings → Action Button</strong>.</li>
-          <li>Swipe through the options until you reach <strong>Shortcut</strong>.</li>
-          <li>Tap <strong>Choose a Shortcut</strong> and pick <strong>SOS Alert</strong>.</li>
-          <li>Press and hold the Action Button to test it.</li>
-        </ol>
-      </details>
-      <details class="guide">
-        <summary>Back Tap <span class="muted">iPhone 8 and later</span></summary>
-        <ol class="steps">
-          <li>Open <strong>Settings → Accessibility → Touch → Back Tap</strong>.</li>
-          <li>Choose <strong>Triple Tap</strong> (less likely to trigger by accident than double tap).</li>
-          <li>Scroll down to <strong>Shortcuts</strong> and pick <strong>SOS Alert</strong>.</li>
-          <li>Tap the back of your phone three times firmly to test.</li>
-        </ol>
-      </details>
-      <details class="guide">
-        <summary>Home Screen widget</summary>
-        <ol class="steps">
-          <li>Touch and hold an empty spot on your Home Screen until icons jiggle.</li>
-          <li>Tap <strong>Edit → Add Widget</strong>, search for <strong>Shortcuts</strong>.</li>
-          <li>Choose the small single-shortcut widget and tap <strong>Add Widget</strong>.</li>
-          <li>Touch and hold the widget → <strong>Edit Widget</strong> → choose <strong>SOS Alert</strong>.</li>
-          <li>Place it where your thumb reaches easily.</li>
-        </ol>
-      </details>
-      <details class="guide">
-        <summary>Lock Screen control <span class="muted">iOS 18 and later</span></summary>
-        <ol class="steps">
-          <li>Touch and hold the Lock Screen, tap <strong>Customize → Lock Screen</strong>.</li>
-          <li>Tap the <strong>−</strong> on one of the bottom controls (torch or camera) to remove it, then tap <strong>+</strong>.</li>
-          <li>Search for <strong>Shortcut</strong>, add it, then tap it to choose <strong>SOS Alert</strong>.</li>
-          <li>Tap <strong>Done</strong>. You can also add the same control to Control Center (swipe down → <strong>+</strong> → <strong>Add a Control</strong>).</li>
-        </ol>
-      </details>
-      <details class="guide">
-        <summary>Siri</summary>
-        <ol class="steps">
-          <li>Siri runs a shortcut by its name. Say <strong>“Hey Siri, SOS Alert”</strong>.</li>
-          <li>To make it work when locked: <strong>Settings → Siri</strong> → turn on <strong>Allow Siri When Locked</strong>.</li>
-          <li>Tip: rename the shortcut to something easy to say quickly, like “Help me now”.</li>
-        </ol>
-      </details>
-
-      <div class="card subtle">
-        <h2 class="card-title">Backup: iPhone Emergency SOS</h2>
-        <p>Holding the side button and a volume button calls emergency services and alerts your Emergency Contacts. Set it up in <strong>Settings → Emergency SOS</strong> and add contacts in the <strong>Health</strong> app → Medical ID.</p>
+      <h2 class="group-title">Set up a trigger</h2>
+      <div class="group guides">
+        <details class="guide">
+          <summary><span class="row-text"><span class="row-title">Action Button</span><span class="row-sub">iPhone 15 Pro and later</span></span></summary>
+          <ol class="steps">
+            <li>Open <strong>Settings → Action Button</strong>.</li>
+            <li>Swipe through the options to <strong>Shortcut</strong>.</li>
+            <li>Tap <strong>Choose a Shortcut</strong> and pick <strong>SOS Alert</strong>.</li>
+            <li>Press and hold the Action Button to test it.</li>
+          </ol>
+        </details>
+        <details class="guide">
+          <summary><span class="row-text"><span class="row-title">Back Tap</span><span class="row-sub">iPhone 8 and later</span></span></summary>
+          <ol class="steps">
+            <li>Open <strong>Settings → Accessibility → Touch → Back Tap</strong>.</li>
+            <li>Choose <strong>Triple Tap</strong>. It is less likely to trigger by accident than Double Tap.</li>
+            <li>Scroll down to <strong>Shortcuts</strong> and pick <strong>SOS Alert</strong>.</li>
+            <li>Tap the back of your phone firmly three times to test.</li>
+          </ol>
+        </details>
+        <details class="guide">
+          <summary><span class="row-text"><span class="row-title">Home Screen widget</span></span></summary>
+          <ol class="steps">
+            <li>Touch and hold an empty spot on your Home Screen until the icons jiggle.</li>
+            <li>Tap <strong>Edit → Add Widget</strong> and search for <strong>Shortcuts</strong>.</li>
+            <li>Choose the small single-shortcut widget and tap <strong>Add Widget</strong>.</li>
+            <li>Touch and hold the widget, tap <strong>Edit Widget</strong> and choose <strong>SOS Alert</strong>.</li>
+            <li>Place it where your thumb reaches easily.</li>
+          </ol>
+        </details>
+        <details class="guide">
+          <summary><span class="row-text"><span class="row-title">Lock Screen control</span><span class="row-sub">iOS 18 and later</span></span></summary>
+          <ol class="steps">
+            <li>Touch and hold the Lock Screen, then tap <strong>Customize → Lock Screen</strong>.</li>
+            <li>Tap <strong>−</strong> on one of the bottom controls (torch or camera) to remove it, then tap <strong>+</strong>.</li>
+            <li>Search for <strong>Shortcut</strong>, add it, then tap it and choose <strong>SOS Alert</strong>.</li>
+            <li>Tap <strong>Done</strong>. You can add the same control to Control Center: swipe down, tap <strong>+</strong>, then <strong>Add a Control</strong>.</li>
+          </ol>
+        </details>
+        <details class="guide">
+          <summary><span class="row-text"><span class="row-title">Siri</span></span></summary>
+          <ol class="steps">
+            <li>Siri runs a shortcut by its name. Say <strong>“Hey Siri, SOS Alert”</strong>.</li>
+            <li>To use it when locked, go to <strong>Settings → Siri</strong> and turn on <strong>Allow Siri When Locked</strong>.</li>
+            <li>You can rename the shortcut to something quick to say, such as “Help me now”.</li>
+          </ol>
+        </details>
       </div>
 
-      <h2 class="section-title">Test checklist <span class="muted small" id="sos-count"></span></h2>
-      <p class="muted small">Tell your contacts before testing. If your shortcut calls 112, edit it to call a friend while you test.</p>
-      <ul class="checklist" id="sos-checklist"></ul>
+      <div class="card">
+        <h2 class="card-title">Backup: iPhone Emergency SOS</h2>
+        <p>Holding the side button and a volume button calls emergency services and alerts your emergency contacts. Set it up in <strong>Settings → Emergency SOS</strong>, and add contacts in the <strong>Health</strong> app under Medical ID.</p>
+      </div>
+
+      <h2 class="group-title">Test checklist <span class="count" id="sos-count"></span></h2>
+      <p class="group-note">Tell your contacts before you test. If your shortcut calls 112, change it to call a friend while testing.</p>
+      <ul class="group checklist" id="sos-checklist"></ul>
     </section>
 
   </main>
@@ -395,26 +412,30 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Vault</span>
     </button>
     <button type="button" data-go="sos" data-tab="sos">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg><span>SOS</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span>SOS</span>
+    </button>
+    <button type="button" id="quick-exit" class="tab-exit">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg><span>Quick exit</span>
     </button>
   </nav>
 
-  <button type="button" id="quick-exit" class="quick-exit">✕ Quick exit</button>
-
-  <!-- Advice sheet (shown when something is suspicious) -->
+  <!-- Advice sheet (shown when something is suspicious). Stops above the tab bar so Quick exit stays reachable. -->
   <div id="sheet" class="sheet-backdrop" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
-      <h2 id="sheet-title">Possible hidden camera</h2>
+      <h2 id="sheet-title">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>
+        Possible hidden camera
+      </h2>
       <p class="muted" id="sheet-where"></p>
-      <ol class="advice">
+      <ol class="steps">
         <li><strong>Don't touch it.</strong> Moving it can destroy evidence and alert whoever placed it.</li>
-        <li><strong>Take photos from a distance</strong> showing the device and where it is in the room.</li>
+        <li><strong>Take photos from a distance</strong> that show the device and where it is in the room.</li>
         <li><strong>Leave the room</strong> calmly. Don't confront anyone on your own.</li>
-        <li><strong>Report it</strong> to management or the owner, and to the police. In an emergency, call <strong>112</strong>.</li>
+        <li><strong>Report it</strong> to management or the owner, and to the police. In an emergency, call 112.</li>
       </ol>
-      <button type="button" class="btn primary block" id="sheet-evidence">Take photos &amp; save to Evidence Vault</button>
+      <button type="button" class="btn primary block" id="sheet-evidence">Take photos and save to vault</button>
       <a class="btn danger block" href="tel:112">Call 112</a>
-      <button type="button" class="btn ghost block" id="sheet-close">Close</button>
+      <button type="button" class="btn block" id="sheet-close">Close</button>
     </div>
   </div>
 </div>

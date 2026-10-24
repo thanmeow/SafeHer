@@ -117,14 +117,15 @@ const PIN = {
   },
 };
 
+// PIN setup screen: used on first launch and for Change PIN. Unlocking happens on the calculator.
 const Lock = {
-  mode: 'unlock', // set | confirm | unlock | verify-old
+  mode: 'set', // set | confirm | verify-old
   entry: '',
   first: '',
+  firstRun: false,
   titles: {
-    set: 'Create a 4-digit PIN',
+    set: 'Set a 4-digit PIN',
     confirm: 'Confirm your PIN',
-    unlock: 'Enter your PIN',
     'verify-old': 'Enter your current PIN',
   },
 
@@ -133,12 +134,15 @@ const Lock = {
     this.mode = mode;
     this.entry = '';
     this.first = '';
+    this.firstRun = !PIN.isSet();
     $('#app').hidden = true;
+    $('#calc').hidden = true;
     $('#lock').hidden = false;
-    $('#lock-cancel').hidden = mode !== 'verify-old';
-    $('#lock-spacer').hidden = mode === 'verify-old';
-    $('#forgot-pin').hidden = mode !== 'unlock';
-    this.message(mode === 'set' ? 'This PIN protects SafeHer on this phone.' : '');
+    $('#lock-pin').hidden = false;
+    $('#lock-done').hidden = true;
+    $('#lock-cancel').hidden = this.firstRun;
+    $('#lock-spacer').hidden = !this.firstRun;
+    this.message(this.firstRun ? 'You will type this PIN on the calculator, then press =, to open the app.' : '');
     this.render();
     this.checkCooldown();
   },
@@ -170,15 +174,17 @@ const Lock = {
       case 'confirm':
         if (pin === this.first) {
           PIN.save(pin);
-          this.unlock();
+          if (this.firstRun) {
+            $('#lock-pin').hidden = true;
+            $('#lock-done').hidden = false;
+          } else {
+            this.unlock();
+          }
         } else {
           this.mode = 'set';
           this.message("PINs didn't match. Try again.", true);
           this.shake();
         }
-        break;
-      case 'unlock':
-        if (PIN.check(pin)) this.unlock(); else this.fail();
         break;
       case 'verify-old':
         if (PIN.check(pin)) {
@@ -224,54 +230,79 @@ const Lock = {
   unlock() {
     store.set('pinFails', 0);
     $('#lock').hidden = true;
+    $('#calc').hidden = true;
     $('#app').hidden = false;
     hiddenAt = 0;
+    Privacy.covered = null;
   },
 };
 
 async function resetEverything() {
-  const ok = confirm('Reset SafeHer?\n\nThis permanently deletes your PIN, every saved incident and photo, and your checklists on this phone. This cannot be undone.');
-  if (!ok) return;
   Object.keys(localStorage).filter((k) => k.startsWith('safeher.')).forEach((k) => localStorage.removeItem(k));
   await DB.destroy();
   location.reload();
 }
 
 /* ================================================================== */
-/* Quick Exit → fake calculator                                       */
+/* Calculator: the app's front door                                   */
 /* ================================================================== */
 const Calc = {
   s: null,
-  themeMetas: [],
+  holdTimer: 0,
 
   reset() {
-    this.s = { display: '0', acc: null, op: null, fresh: true, typed: '' };
+    // addAcc/addOp hold a pending + or − while a × or ÷ is evaluated first (12 + 7 × 2 = 26).
+    this.s = { display: '0', acc: null, op: null, addAcc: null, addOp: null, fresh: true, typed: '' };
     this.render();
   },
   show() {
     Lens.stop(); IR.stop(); closeSheet();
     go('home'); // leave nothing sensitive rendered underneath
+    Privacy.covered = null;
     $('#app').hidden = true;
     $('#lock').hidden = true;
     $('#calc').hidden = false;
-    document.title = 'Calculator';
-    this.themeMetas.forEach((m) => m.setAttribute('content', '#000000'));
-    store.set('disguise', true);
     this.reset();
-  },
-  hide() {
-    $('#calc').hidden = true;
-    document.title = 'SafeHer';
-    this.themeMetas.forEach((m) => m.setAttribute('content', m.dataset.original));
-    store.remove('disguise');
-    Lock.unlock();
   },
   render() {
     const el = $('#calc-display');
-    el.textContent = this.s.display;
-    const len = this.s.display.length;
-    el.style.fontSize = len > 9 ? '48px' : len > 6 ? '60px' : '';
+    const text = this.pretty(this.s.display);
+    el.textContent = text;
+    el.style.fontSize = text.length > 11 ? '44px' : text.length > 8 ? '56px' : '';
+    $$('#calc-keys .op').forEach((b) => b.classList.toggle('active', this.s.fresh && this.s.op === b.dataset.k));
   },
+  // Thousands separators for display only; the raw value stays in s.display.
+  pretty(raw) {
+    if (!/^-?\d+(\.\d*)?$/.test(raw)) return raw;
+    const [int, frac] = raw.split('.');
+    const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return frac === undefined ? grouped : `${grouped}.${frac}`;
+  },
+  // Wrong guesses stay silent so it still looks like normal maths.
+  // After 5 wrong PINs in a row, PIN entry is ignored for 30 seconds.
+  tryPin(pin) {
+    if (Date.now() < store.get('lockedUntil', 0)) return false;
+    if (PIN.check(pin)) {
+      Lock.unlock();
+      return true;
+    }
+    const fails = store.get('pinFails', 0) + 1;
+    if (fails >= 5) {
+      store.set('lockedUntil', Date.now() + 30000);
+      store.set('pinFails', 0);
+    } else {
+      store.set('pinFails', fails);
+    }
+    return false;
+  },
+  // Hold AC for 5 seconds: forgotten-PIN reset.
+  startHold() {
+    clearTimeout(this.holdTimer);
+    this.holdTimer = setTimeout(() => {
+      if (confirm('Erase all data and start again?\n\nThis permanently deletes your PIN and everything saved in this app.')) resetEverything();
+    }, 5000);
+  },
+  cancelHold() { clearTimeout(this.holdTimer); },
   format(n) {
     if (!isFinite(n)) return 'Error';
     if (Math.abs(n) >= 1e9 || (Math.abs(n) < 1e-6 && n !== 0)) return n.toExponential(4);
@@ -305,25 +336,63 @@ const Calc = {
     } else if (k === '%') {
       s.display = this.format(cur / 100);
     } else if (k === '=') {
-      // Secret way back: type your 4-digit PIN, then press =
-      if (!s.op && /^\d{4}$/.test(s.typed) && PIN.check(s.typed)) {
-        this.hide();
-        return;
-      }
+      // The way in: type the 4-digit PIN, then press =
+      if (!s.op && /^\d{4}$/.test(s.typed) && this.tryPin(s.typed)) return;
       if (s.op) {
-        s.display = this.format(this.compute(s.acc, s.op, cur));
+        let result = this.compute(s.acc, s.op, cur);
+        if (s.addOp) result = this.compute(s.addAcc, s.addOp, result);
+        s.display = this.format(result);
         s.op = null;
+        s.addOp = null;
       }
       s.fresh = true;
       s.typed = '';
     } else { // + - * /
-      if (s.op && !s.fresh) s.display = this.format(this.compute(s.acc, s.op, cur));
-      s.acc = parseFloat(s.display) || 0;
-      s.op = k;
+      const high = (o) => o === '*' || o === '/';
+      if (s.op && s.fresh) {
+        s.op = k; // changed their mind about the operator
+      } else {
+        if (!s.op) {
+          s.acc = cur;
+        } else if (high(k) && !high(s.op)) {
+          s.addAcc = s.acc;
+          s.addOp = s.op;
+          s.acc = cur;
+        } else {
+          s.acc = this.compute(s.acc, s.op, cur);
+          if (!high(k) && s.addOp) {
+            s.acc = this.compute(s.addAcc, s.addOp, s.acc);
+            s.addOp = null;
+          }
+        }
+        s.display = this.format(s.acc);
+        s.op = k;
+      }
       s.fresh = true;
       s.typed = '';
     }
     this.render();
+  },
+};
+
+// The moment the app goes to the background the calculator covers the screen, so the
+// app switcher shows a calculator. Coming back within AUTO_LOCK_MS restores where you were;
+// after that you need the PIN again.
+const Privacy = {
+  covered: null, // selector of the screen hidden by the cover
+  cover() {
+    if (!PIN.isSet() || !$('#calc').hidden) return;
+    this.covered = $('#app').hidden ? '#lock' : '#app';
+    $(this.covered).hidden = true;
+    $('#calc').hidden = false;
+    Calc.reset();
+  },
+  restore(expired) {
+    if (!this.covered) return;
+    if (expired) { Calc.show(); return; }
+    $('#calc').hidden = true;
+    $(this.covered).hidden = false;
+    this.covered = null;
   },
 };
 
@@ -338,6 +407,7 @@ function go(name, { parent } = {}) {
 
   Lens.stop();
   IR.stop();
+  closeSheet();
   revokePhotoUrls();
   if (currentView === 'report') $('#report-doc').innerHTML = '';
   if (currentView === 'vault-detail') $('#detail-body').innerHTML = '';
@@ -392,7 +462,8 @@ const ROOM_TYPES = {
   airbnb: { label: 'Airbnb / homestay', desc: 'Hosts must disclose any cameras', spots: ['smoke', 'clock', 'usb', 'socket', 'tv', 'router', 'frame', 'decor', 'mirror', 'vent', 'lamp', 'tissue', 'hooks', 'shower', 'ceiling'] },
 };
 
-const CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+const CHEVRON = '<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+const X_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
 let room = store.get('room', { type: null, results: {}, mirror: null });
 const saveRoom = () => store.set('room', room);
@@ -409,7 +480,7 @@ function renderRoomTypes() {
       const p = roomProgress(key);
       note = `In progress: ${p.done}/${p.total} checked`;
     }
-    return `<button type="button" class="choice" data-room="${key}"><span>${esc(t.label)}<small>${note}</small></span>${CHEVRON}</button>`;
+    return `<li><button type="button" class="row" data-room="${key}"><span class="row-text"><span class="row-title">${esc(t.label)}</span><span class="row-sub">${note}</span></span>${CHEVRON}</button></li>`;
   }).join('');
 }
 
@@ -427,8 +498,8 @@ function spotHtml(id) {
     <div class="spot-head"><h3>${esc(s.name)}</h3>${badge}</div>
     <p class="tip"><strong>How to check:</strong> ${esc(s.tip)}</p>
     <div class="btn-row">
-      <button type="button" class="btn ${st === 'fine' ? 'ok' : ''}" data-act="fine" aria-pressed="${st === 'fine'}">Looks fine</button>
-      <button type="button" class="btn ${st === 'sus' ? 'danger' : 'danger-outline'}" data-act="sus" aria-pressed="${st === 'sus'}">Suspicious</button>
+      <button type="button" class="btn ${st === 'fine' ? 'primary' : ''}" data-act="fine" aria-pressed="${st === 'fine'}">Looks fine</button>
+      <button type="button" class="btn ${st === 'sus' ? 'danger' : ''}" data-act="sus" aria-pressed="${st === 'sus'}">Suspicious</button>
     </div>
   </li>`;
 }
@@ -437,9 +508,18 @@ function renderRoomCheck() {
   const t = ROOM_TYPES[room.type];
   $('#rc-room').textContent = t.label;
   $('#spot-list').innerHTML = t.spots.map(spotHtml).join('');
-  $('#mirror-result').textContent = room.mirror ? `Recorded: ${room.mirror === 'fine' ? 'gap seen — looks fine' : 'no gap — suspicious'}.` : '';
+  renderMirror();
   showPanel('list');
   updateRoomProgress();
+}
+
+function renderMirror() {
+  $('#mirror-result').textContent = room.mirror ? `Saved: ${room.mirror === 'fine' ? 'gap seen, looks fine' : 'no gap, suspicious'}.` : '';
+  const fine = $('[data-mirror="fine"]'), sus = $('[data-mirror="sus"]');
+  fine.classList.toggle('primary', room.mirror === 'fine');
+  sus.classList.toggle('danger', room.mirror === 'sus');
+  fine.setAttribute('aria-pressed', String(room.mirror === 'fine'));
+  sus.setAttribute('aria-pressed', String(room.mirror === 'sus'));
 }
 
 function updateRoomProgress() {
@@ -646,9 +726,9 @@ const Lens = {
       ctx.lineWidth = 4; ctx.strokeStyle = '#ff2d2d'; ctx.stroke();
     }
 
-    if (tooBright) this.setStatus('Too much light — turn off the room lights for best results.');
-    else if (shown.length) this.setStatus(`${shown.length} bright spot${shown.length > 1 ? 's' : ''} marked — check ${shown.length > 1 ? 'those areas' : 'that area'} closely.`, true);
-    else this.setStatus('Scanning… no small bright spots right now. Keep moving slowly.');
+    if (tooBright) this.setStatus('Too much light. Turn off the room lights.');
+    else if (shown.length) this.setStatus(`${shown.length} bright spot${shown.length > 1 ? 's' : ''} marked. Check ${shown.length > 1 ? 'those areas' : 'that area'} closely.`, true);
+    else this.setStatus('Scanning. No small bright spots right now. Keep moving slowly.');
   },
 
   setStatus(text, alert = false) {
@@ -779,7 +859,7 @@ const Vault = {
     try {
       items = await DB.all();
     } catch {
-      $('#incident-list').innerHTML = '<li class="empty">Storage is unavailable. If you are in Private Browsing, open SafeHer normally.</li>';
+      $('#incident-list').innerHTML = '<li class="empty">Storage is unavailable. If you are in Private Browsing, open the app normally.</li>';
       return;
     }
     if (currentView !== 'vault') return;
@@ -827,7 +907,7 @@ const Vault = {
 
   renderPhotos() {
     $('#photo-grid').innerHTML = this.photos.map((p, i) =>
-      `<div class="photo-item"><img src="${photoUrl(p)}" alt="Photo ${i + 1}"><button type="button" data-remove="${i}" aria-label="Remove photo ${i + 1}">✕</button></div>`
+      `<div class="photo-item"><img src="${photoUrl(p)}" alt="Photo ${i + 1}"><button type="button" data-remove="${i}" aria-label="Remove photo ${i + 1}"><span>${X_ICON}</span></button></div>`
     ).join('');
   },
 
@@ -889,7 +969,7 @@ const Vault = {
     $('#detail-body').innerHTML = `<div class="card detail">
       <dl>${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
       ${photos ? `<div class="detail-photos">${photos}</div>` : ''}
-      <p class="muted small" style="margin:14px 0 0">Saved ${esc(formatDateTime(rec.createdAt))}${rec.updatedAt !== rec.createdAt ? ` · edited ${esc(formatDateTime(rec.updatedAt))}` : ''}</p>
+      <p class="muted meta">Saved ${esc(formatDateTime(rec.createdAt))}${rec.updatedAt !== rec.createdAt ? ` · edited ${esc(formatDateTime(rec.updatedAt))}` : ''}</p>
     </div>`;
   },
 
@@ -926,7 +1006,7 @@ const Vault = {
     const doc = $('#report-doc');
     doc.innerHTML = `<h1>Incident Report</h1>
       <p class="meta">Generated ${esc(formatDateTime(new Date()))} · ${items.length} incident${items.length > 1 ? 's' : ''}<br>
-      Recorded in SafeHer and stored only on the owner's device.</p>${sections}`;
+      Stored only on the owner's device.</p>${sections}`;
     await Promise.all($$('img', doc).map((img) => (img.decode ? img.decode().catch(() => {}) : null)));
     if (currentView === 'report') window.print();
   },
@@ -972,18 +1052,19 @@ function init() {
     if (b) Lock.press(b.dataset.d);
   });
   $('#lock-cancel').addEventListener('click', () => Lock.unlock());
-  $('#forgot-pin').addEventListener('click', resetEverything);
-  $('#lock-now').addEventListener('click', () => Lock.show('unlock'));
+  $('#lock-continue').addEventListener('click', () => Calc.show());
+  $('#lock-now').addEventListener('click', () => Calc.show());
   $('#change-pin').addEventListener('click', () => Lock.show('verify-old'));
 
-  // Quick exit / calculator
-  Calc.themeMetas = $$('meta[name="theme-color"]');
-  Calc.themeMetas.forEach((m) => { m.dataset.original = m.getAttribute('content'); });
+  // Calculator / quick exit
   $('#quick-exit').addEventListener('click', () => Calc.show());
   $('#calc-keys').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-k]');
     if (b) Calc.press(b.dataset.k);
   });
+  const ac = $('#calc-keys [data-k="C"]');
+  ac.addEventListener('pointerdown', () => Calc.startHold());
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => ac.addEventListener(t, () => Calc.cancelHold()));
 
   // Navigation
   document.addEventListener('click', (e) => {
@@ -1019,7 +1100,7 @@ function init() {
   $$('[data-mirror]').forEach((b) => b.addEventListener('click', () => {
     room.mirror = b.dataset.mirror;
     saveRoom();
-    $('#mirror-result').textContent = `Recorded: ${room.mirror === 'fine' ? 'gap seen — looks fine' : 'no gap — suspicious'}.`;
+    renderMirror();
     if (room.mirror === 'sus') openAdvice('Mirror (possible two-way mirror)');
   }));
   $('#found-btn').addEventListener('click', () => openAdvice(''));
@@ -1074,20 +1155,23 @@ function init() {
     updateSosCount();
   });
 
-  // Camera off + auto-lock when the app goes to the background
+  // Background: cameras off and calculator cover; over AUTO_LOCK_MS away needs the PIN again
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       hiddenAt = Date.now();
       Lens.stop();
       IR.stop();
-    } else if (hiddenAt && Date.now() - hiddenAt > AUTO_LOCK_MS && !$('#app').hidden) {
-      Lock.show('unlock');
+      Privacy.cover();
+    } else {
+      Privacy.restore(hiddenAt > 0 && Date.now() - hiddenAt > AUTO_LOCK_MS);
     }
   });
 
+  // Always open on the calculator; first launch sets the PIN first.
+  store.remove('disguise'); // no longer used
   go('home');
-  if (store.get('disguise') && PIN.isSet()) Calc.show();
-  else Lock.show(PIN.isSet() ? 'unlock' : 'set');
+  if (PIN.isSet()) Calc.show();
+  else Lock.show('set');
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* offline support unavailable (e.g. plain http) */ });
