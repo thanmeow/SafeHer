@@ -5,7 +5,7 @@
  * ================================================================== */
 const SOS_SHORTCUT_URL = 'https://www.icloud.com/shortcuts/0041b144951b424883606d7c70c926f0';
 
-const AUTO_LOCK_MS = 60 * 1000; // re-ask PIN after the app has been in the background this long
+const AUTO_LOCK_MS = 60 * 1000; // default auto-lock time; changeable in Settings
 
 /* ================================================================== */
 /* Helpers                                                            */
@@ -376,7 +376,7 @@ const Calc = {
 };
 
 // The moment the app goes to the background the calculator covers the screen, so the
-// app switcher shows a calculator. Coming back within AUTO_LOCK_MS restores where you were;
+// app switcher shows a calculator. Coming back within the auto-lock time restores where you were;
 // after that you need the PIN again.
 const Privacy = {
   covered: null, // selector of the screen hidden by the cover
@@ -417,6 +417,7 @@ function go(name, { parent } = {}) {
   if (parent) target.dataset.parent = parent;
   $('#view-title').textContent = target.dataset.title;
   $('#back-btn').hidden = !target.dataset.parent;
+  $('#settings-btn').hidden = name === 'settings';
   $$('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === target.dataset.tab));
   currentView = name;
   window.scrollTo(0, 0);
@@ -426,6 +427,8 @@ function go(name, { parent } = {}) {
     'room-check': renderRoomCheck,
     vault: () => Vault.renderList(),
     'vault-detail': () => Vault.renderDetail(),
+    protocol: () => Protocol.render(),
+    settings: renderSettings,
     sos: renderSos,
   };
   if (onEnter[name]) onEnter[name]();
@@ -564,7 +567,7 @@ function adviceToEvidence() {
     spot && `Where: ${spot}`,
     `Noted: ${formatDateTime(new Date())}`,
   ].filter(Boolean).join('\n');
-  Vault.openForm(null, { type: 'camera', roomType: roomType || '', spot, description });
+  Vault.openForm(null, { type: 'camera', details: { roomType: roomType || '', spot }, description });
   // Same tap → open the camera straight away (iOS allows this inside a user gesture).
   $('#photo-camera').click();
 }
@@ -838,20 +841,240 @@ const DB = {
   },
 };
 
-const INCIDENT_TYPES = {
-  online: 'Online harassment',
-  stalking: 'Stalking',
-  camera: 'Hidden camera',
-  physical: 'Physical harassment',
-  other: 'Other',
+/* ---------- Incident categories ---------- */
+const ICONS = {
+  online: '<path d="M4 5h16v11H9l-5 4z"/>',
+  stalking: '<path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+  camera: '<path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/>',
+  physical: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  workplace: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/>',
+  threats: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  other: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
 };
+const icon = (key) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[key] || ICONS.other}</svg>`;
+
+// Each category: its own fields (stored in rec.details), label overrides for the shared
+// fields, an evidence checklist (rec.evidence) and the Action Protocol section it links to.
+const CATEGORIES = {
+  online: {
+    label: 'Online harassment', short: 'Online', protocol: 'cyber',
+    labels: { person: 'Person or account involved', photos: 'Message screenshots' },
+    fields: [
+      { key: 'platform', label: 'Platform', placeholder: 'For example: Instagram, WhatsApp, email' },
+      { key: 'profile', label: 'Profile link or username', placeholder: 'https://… or @username' },
+    ],
+    evidence: [
+      ['shots', 'Screenshots showing the username, date and time'],
+      ['url', 'Profile URL or username'],
+      ['export', 'Full chat export'],
+      ['emails', 'Emails with full headers'],
+      ['payments', 'Payment requests or transaction IDs'],
+      ['links', 'Links to posts or comments'],
+      ['report', 'Report or ticket number from the platform'],
+    ],
+  },
+  stalking: {
+    label: 'Stalking', short: 'Stalking', protocol: 'police',
+    labels: { location: 'Where it last happened' },
+    fields: [
+      { key: 'sightings', label: 'Dates and places seen', type: 'textarea', placeholder: 'One line per time: date, time, place' },
+      { key: 'method', label: 'How they followed or contacted you', type: 'textarea', placeholder: 'For example: waited outside work, calls from new numbers' },
+      { key: 'pattern', label: 'Pattern over time', type: 'textarea', placeholder: 'How often, and whether it is getting worse' },
+    ],
+    evidence: [
+      ['log', 'A log of each time, with date, time and place'],
+      ['photos', 'Photos or video of the person or vehicle, taken from a safe distance'],
+      ['calls', 'Call logs and messages'],
+      ['cctv', 'Places with CCTV to request footage from'],
+      ['witnesses', 'Names and contacts of witnesses'],
+      ['earlier', 'Copies of any earlier complaints'],
+    ],
+  },
+  camera: {
+    label: 'Hidden camera / voyeurism', short: 'Hidden camera', protocol: 'police',
+    labels: { location: 'Location (address, hotel, room number)' },
+    fields: [
+      { key: 'roomType', label: 'Room type', type: 'select', options: () => [['', 'Not set'], ...Object.entries(ROOM_TYPES).map(([k, t]) => [k, t.label])] },
+      { key: 'spot', label: 'Where the device was', placeholder: 'For example: smoke detector' },
+    ],
+    evidence: [
+      ['device', 'Photos of the device where it was, taken from a distance'],
+      ['room', 'Photos showing where it is in the room'],
+      ['booking', 'Booking or rental details (receipt, room number)'],
+      ['management', 'Who you told at the property, and their reply'],
+      ['found', 'Date and time you found it'],
+      ['online', 'Links to any images of you found online'],
+    ],
+  },
+  physical: {
+    label: 'Physical harassment or assault', short: 'Physical', protocol: 'police',
+    labels: { location: 'Place' },
+    fields: [
+      { key: 'witnesses', label: 'Witnesses', type: 'textarea', placeholder: 'Names and phone numbers' },
+      { key: 'injuries', label: 'Injuries', type: 'textarea', placeholder: 'Describe any injuries, even small ones' },
+      { key: 'medical', label: 'Medical visit', placeholder: 'Hospital, date and report number, or "not yet"' },
+    ],
+    evidence: [
+      ['medical', 'Medical examination report'],
+      ['injuries', 'Photos of injuries'],
+      ['clothes', 'Clothing from the incident, unwashed, in a paper bag'],
+      ['witnesses', 'Names and contacts of witnesses'],
+      ['cctv', 'Places with CCTV to request footage from'],
+      ['messages', 'Messages sent before or after the incident'],
+    ],
+  },
+  workplace: {
+    label: 'Workplace harassment', short: 'Workplace', protocol: 'posh',
+    labels: { location: 'Place (office, site or online)' },
+    fields: [
+      { key: 'organisation', label: 'Organisation', placeholder: 'Employer or company name' },
+      { key: 'role', label: "Person's role", placeholder: 'For example: manager, colleague, client' },
+      { key: 'dates', label: 'Dates of incidents', type: 'textarea', placeholder: 'One line per incident' },
+      { key: 'icReported', label: 'Reported to the Internal Committee?', type: 'select', options: () => [['', 'Not yet'], ['ic', 'Yes, to the Internal Committee'], ['lc', 'Yes, to the Local Committee'], ['none', 'There is no Internal Committee']] },
+    ],
+    evidence: [
+      ['messages', 'Emails, chats or messages'],
+      ['dates', 'Dates and times of each incident'],
+      ['witnesses', 'Names of witnesses'],
+      ['complaint', 'Your written complaint and its acknowledgement'],
+      ['hr', 'Messages with HR or your manager about it'],
+      ['employment', 'Appointment letter or ID showing you work there'],
+    ],
+  },
+  threats: {
+    label: 'Threats or blackmail', short: 'Threats', protocol: 'police',
+    fields: [
+      { key: 'threat', label: 'What was threatened', type: 'textarea' },
+      { key: 'demands', label: 'Demands', type: 'textarea', placeholder: 'Money, photos, meeting, anything else' },
+      { key: 'channel', label: 'How it was sent', placeholder: 'For example: WhatsApp, call, letter, in person' },
+    ],
+    evidence: [
+      ['shots', 'Screenshots of threats showing the sender, date and time'],
+      ['ids', 'Phone numbers or account IDs used'],
+      ['calls', 'Call recordings or call logs'],
+      ['payments', 'Payment demands and any transaction details'],
+      ['keep', 'A record of what they claim to have (do not delete messages)'],
+    ],
+  },
+  other: {
+    label: 'Other', short: 'Other', protocol: 'police',
+    fields: [],
+    evidence: [
+      ['dates', 'Dates and times'],
+      ['photos', 'Photos or screenshots'],
+      ['witnesses', 'Names of witnesses'],
+      ['messages', 'Any written messages'],
+      ['complaints', 'Copies of complaints you made'],
+    ],
+  },
+};
+const category = (key) => CATEGORIES[key] || CATEGORIES.other;
+
+const COMPLAINT_FIELDS = [
+  ['fir', 'FIR number'],
+  ['station', 'Police station'],
+  ['officer', 'Officer name'],
+  ['filedOn', 'Date filed'],
+  ['ackNo', 'Other complaint or acknowledgement number'],
+];
+
+// Older records kept roomType/spot at the top level.
+function detailsOf(rec) {
+  return { ...(rec.roomType ? { roomType: rec.roomType } : {}), ...(rec.spot ? { spot: rec.spot } : {}), ...(rec.details || {}) };
+}
+function displayValue(field, value) {
+  if (!value) return '';
+  if (field.type === 'select') {
+    const opt = field.options().find(([v]) => v === value);
+    return opt ? opt[1] : value;
+  }
+  return value;
+}
+function fieldHtml(f, value) {
+  const attrs = `name="detail-${f.key}" data-detail="${f.key}"`;
+  const ph = f.placeholder ? ` placeholder="${esc(f.placeholder)}"` : '';
+  let input;
+  if (f.type === 'textarea') input = `<textarea ${attrs} rows="3"${ph}>${esc(value)}</textarea>`;
+  else if (f.type === 'select') input = `<select ${attrs}>${f.options().map(([v, l]) => `<option value="${esc(v)}"${v === value ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+  else input = `<input type="text" ${attrs} value="${esc(value)}"${ph} autocomplete="off">`;
+  return `<label class="field"><span>${esc(f.label)}</span>${input}</label>`;
+}
+function evidenceHtml(cat, state, attr) {
+  return cat.evidence.map(([id, label]) =>
+    `<li><label><input type="checkbox" ${attr}="${id}" ${state[id] ? 'checked' : ''}><span>${esc(label)}</span></label></li>`
+  ).join('');
+}
+function countDone(list, state) {
+  return list.filter((id) => state && state[id]).length;
+}
+
+/* ---------- Action Protocol checklists ---------- */
+const CHECKLISTS = {
+  police: {
+    title: 'Police complaint',
+    steps: [
+      { id: 'write', title: 'Write down what happened', text: 'Include the date, time and place, what was said or done, and who was there.' },
+      { id: 'evidence', title: 'Gather your evidence', text: 'Collect the items on the incident’s evidence checklist. Bring originals, not only copies.', extra: 'evidence' },
+      { id: 'witnesses', title: 'Note witness names and contacts', text: 'Anyone who saw or heard something, or anyone you told soon afterwards.' },
+      { id: 'station', title: 'Go to any police station, or file online', text: 'You can file an FIR at any police station. If it happened in another area, ask for a Zero FIR; it is then transferred to the right station (BNSS Section 173). Some states accept an e-FIR online, which you must sign within 3 days.' },
+      { id: 'woman', title: 'Ask for a woman officer', text: 'For sexual offences, your statement should be recorded by a woman police officer.' },
+      { id: 'read', title: 'Read the FIR before signing and get a free copy', text: 'Check it says what you said. You are entitled to a free copy of the FIR.' },
+      { id: 'save', title: 'Save the FIR details in the incident', text: 'Record the FIR number, police station, officer’s name and the date filed.', extra: 'fir' },
+      { id: 'refuse', title: 'If the police refuse, write to the Superintendent of Police', text: 'For a cognizable offence the police must register an FIR. If they refuse, send the details in writing to the Superintendent of Police. You can also apply to the Magistrate.' },
+      { id: 'follow', title: 'Follow up and keep copies', text: 'Keep copies of every complaint, acknowledgement and the FIR number. Ask for updates on the investigation.' },
+    ],
+  },
+  cyber: {
+    title: 'Cyber complaint',
+    steps: [
+      { id: 'save', title: 'Save the evidence first', text: 'Before you block or report, take screenshots that show the username, date and time. Copy profile links and export the full chat.', extra: 'evidence' },
+      { id: 'portal', title: 'Report at cybercrime.gov.in', text: 'The national cyber crime reporting portal. Choose the category that fits and attach your evidence.', extra: 'portal' },
+      { id: 'call', title: 'Call 1930 if money is involved', text: '1930 is the national cyber crime helpline. Report financial fraud as quickly as you can; it can help stop the money.', extra: 'call1930' },
+      { id: 'ack', title: 'Save your complaint number', text: 'Write down the acknowledgement number you receive.', extra: 'ack' },
+      { id: 'platform', title: 'Report the account on the platform', text: 'Use the app’s report option for harassment, threats or intimate images shared without consent.' },
+      { id: 'block', title: 'Block the account', text: 'Block only after you have saved the evidence and reported it.' },
+      { id: 'takedown', title: 'Ask for the content to be taken down', text: 'Platforms must act quickly on complaints about intimate images shared without consent. StopNCII.org can also help stop intimate images being shared on participating platforms.' },
+      { id: 'police', title: 'Consider a police complaint too', text: 'Threats, stalking or sharing private images can also be reported at a police station (see Section B).' },
+      { id: 'follow', title: 'Follow up with your complaint number', text: 'Keep copies of everything you submit.' },
+    ],
+  },
+  posh: {
+    title: 'Workplace (POSH) complaint',
+    steps: [
+      { id: 'record', title: 'Write down each incident', text: 'Dates, times, what happened and who saw it.' },
+      { id: 'ic', title: 'Find your Internal Committee', text: 'Employers with 10 or more employees must have an Internal Committee (IC). The members’ names should be displayed at the workplace.' },
+      { id: 'complain', title: 'Complain to the IC in writing', text: 'Generally within 3 months of the incident, or of the last incident if it continued. The IC can extend this by up to 3 more months if there was a good reason for the delay.' },
+      { id: 'local', title: 'Use the Local Committee if needed', text: 'If your employer has fewer than 10 employees, or the complaint is against the employer, complain to the Local Committee through the District Officer.' },
+      { id: 'evidence', title: 'Attach your evidence and keep a copy', text: 'Include messages, dates and witness names. Keep a full copy of what you submit.', extra: 'evidence' },
+      { id: 'ack', title: 'Get a written acknowledgement', text: 'Ask for a dated acknowledgement of your complaint.', extra: 'ack' },
+      { id: 'relief', title: 'Ask for interim relief if you need it', text: 'During the inquiry you can ask for a transfer, leave, or for the person to stop supervising your work.' },
+      { id: 'timeline', title: 'Know the timeline', text: 'The inquiry should be completed within 90 days.' },
+      { id: 'police', title: 'You can also go to the police', text: 'A POSH complaint does not stop you filing a police complaint for a criminal offence.' },
+    ],
+  },
+};
+
+function protocolSummary(rec) {
+  return Object.entries(rec.protocol || {})
+    .map(([key, state]) => {
+      const list = CHECKLISTS[key];
+      if (!list) return '';
+      const done = countDone(list.steps.map((s) => s.id), state);
+      return done ? `${list.title}: ${done} of ${list.steps.length} steps done` : '';
+    })
+    .filter(Boolean);
+}
 
 const LOCK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>';
 
 const Vault = {
+  filter: 'all',
   editingId: null,
   editingCreatedAt: null,
+  editingProtocol: null,
   photos: [], // { type, name, data: ArrayBuffer } — raw bytes are the most reliable thing to keep in Safari's IndexedDB
+  draft: {},
+  evidence: {},
   current: null,
 
   async renderList() {
@@ -863,17 +1086,30 @@ const Vault = {
       return;
     }
     if (currentView !== 'vault') return;
-    items.sort((a, b) => String(b.datetime).localeCompare(String(a.datetime)));
-    $('#vault-empty').hidden = items.length > 0;
+    const counts = { all: items.length };
+    items.forEach((rec) => { const k = CATEGORIES[rec.type] ? rec.type : 'other'; counts[k] = (counts[k] || 0) + 1; });
+    $('#vault-filters').innerHTML = [['all', 'All'], ...Object.entries(CATEGORIES).map(([k, c]) => [k, c.short])]
+      .map(([k, label]) => `<button type="button" class="chip" data-filter="${k}" aria-pressed="${this.filter === k}">${esc(label)}<span class="n">${counts[k] || 0}</span></button>`)
+      .join('');
+
+    const shown = items
+      .filter((rec) => this.filter === 'all' || (CATEGORIES[rec.type] ? rec.type : 'other') === this.filter)
+      .sort((a, b) => String(b.datetime).localeCompare(String(a.datetime)));
+    $('#vault-empty').hidden = shown.length > 0;
+    $('#vault-empty').textContent = this.filter === 'all' ? 'No incidents saved yet.' : `No ${category(this.filter).label.toLowerCase()} incidents yet.`;
     $('#export-btn').disabled = items.length === 0;
-    $('#incident-list').innerHTML = items.map((rec) => {
+    $('#incident-list').innerHTML = shown.map((rec) => {
+      const cat = category(rec.type);
       const thumb = rec.photos && rec.photos.length
         ? `<img class="incident-thumb" src="${photoUrl(rec.photos[0])}" alt="">`
-        : `<span class="incident-thumb">${LOCK_ICON}</span>`;
+        : `<span class="incident-thumb">${icon(rec.type)}</span>`;
       const sub = [formatDateTime(rec.datetime), rec.location].filter(Boolean).map(esc).join(' · ');
-      const photos = rec.photos && rec.photos.length ? `${rec.photos.length} photo${rec.photos.length > 1 ? 's' : ''}` : 'No photos';
+      const extra = [
+        rec.photos && rec.photos.length ? `${rec.photos.length} photo${rec.photos.length > 1 ? 's' : ''}` : '',
+        ...protocolSummary(rec),
+      ].filter(Boolean).map(esc).join(' · ');
       return `<li><button type="button" class="incident" data-id="${rec.id}">${thumb}
-        <span class="incident-body"><strong>${esc(INCIDENT_TYPES[rec.type] || 'Incident')}</strong><span>${sub}</span><span>${photos}</span></span>
+        <span class="incident-body"><strong>${esc(cat.label)}</strong><span>${sub}</span>${extra ? `<span>${extra}</span>` : ''}</span>
       </button></li>`;
     }).join('');
   },
@@ -886,23 +1122,44 @@ const Vault = {
 
     this.editingId = rec ? rec.id : null;
     this.editingCreatedAt = rec ? rec.createdAt : null;
+    this.editingProtocol = rec ? rec.protocol || {} : {};
     this.photos = rec && rec.photos ? rec.photos.slice() : [];
+    this.draft = detailsOf(data);
+    this.evidence = { ...(data.evidence || {}) };
 
     const form = $('#incident-form');
     form.reset();
-    form.type.value = data.type || 'online';
+    form.type.value = CATEGORIES[data.type] ? data.type : (prefill.type || (this.filter !== 'all' ? this.filter : 'online'));
     form.datetime.value = data.datetime || localDateTimeValue();
     form.location.value = data.location || '';
     form.person.value = data.person || '';
     form.description.value = data.description || '';
-    form.roomType.value = data.roomType || '';
-    form.spot.value = data.spot || '';
-    this.toggleCameraFields();
+    const complaint = data.complaint || {};
+    COMPLAINT_FIELDS.forEach(([key]) => { form[`c-${key}`].value = complaint[key] || ''; });
+    $('#complaint-fields').open = COMPLAINT_FIELDS.some(([key]) => complaint[key]);
+    this.renderCategoryFields();
     this.renderPhotos();
   },
 
-  toggleCameraFields() {
-    $('#camera-fields').hidden = $('#f-type').value !== 'camera';
+  renderCategoryFields() {
+    const cat = category($('#f-type').value);
+    $('#category-fields').innerHTML = cat.fields.map((f) => fieldHtml(f, this.draft[f.key] || '')).join('');
+    const labels = { location: 'Location', person: 'Person involved (optional)', photos: 'Photos', ...(cat.labels || {}) };
+    if (cat.labels && cat.labels.person) labels.person += ' (optional)';
+    $('#label-location').textContent = labels.location;
+    $('#label-person').textContent = labels.person;
+    $('#label-photos').textContent = labels.photos;
+    $('#form-evidence').innerHTML = evidenceHtml(cat, this.evidence, 'data-evidence');
+  },
+
+  collectDraft() {
+    $$('#category-fields [data-detail]').forEach((el) => { this.draft[el.dataset.detail] = el.value; });
+    $$('#form-evidence [data-evidence]').forEach((el) => { this.evidence[el.dataset.evidence] = el.checked; });
+  },
+
+  changeType() {
+    this.collectDraft();
+    this.renderCategoryFields();
   },
 
   renderPhotos() {
@@ -922,16 +1179,26 @@ const Vault = {
 
   async save(e) {
     e.preventDefault();
+    this.collectDraft();
     const form = $('#incident-form');
     const type = form.type.value;
+    const cat = category(type);
+    const details = {};
+    cat.fields.forEach((f) => { const v = String(this.draft[f.key] || '').trim(); if (v) details[f.key] = v; });
+    const evidence = {};
+    cat.evidence.forEach(([id]) => { if (this.evidence[id]) evidence[id] = true; });
+    const complaint = {};
+    COMPLAINT_FIELDS.forEach(([key]) => { const v = form[`c-${key}`].value.trim(); if (v) complaint[key] = v; });
     const rec = {
       type,
       datetime: form.datetime.value || localDateTimeValue(),
       location: form.location.value.trim(),
       person: form.person.value.trim(),
       description: form.description.value.trim(),
-      roomType: type === 'camera' ? form.roomType.value : '',
-      spot: type === 'camera' ? form.spot.value.trim() : '',
+      details,
+      evidence,
+      complaint,
+      protocol: this.editingProtocol || {},
       photos: this.photos,
       createdAt: this.editingCreatedAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -942,35 +1209,60 @@ const Vault = {
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
       this.showDetail(id);
     } catch {
-      alert('Could not save this incident. Your phone may be low on storage — try fewer or smaller photos.');
+      alert('Could not save this incident. Your phone may be low on storage. Try fewer or smaller photos.');
     }
   },
 
-  async showDetail(id) {
+  async showDetail(id, { focus } = {}) {
     const rec = await DB.get(id);
     if (!rec) { go('vault'); return; }
     this.current = rec;
     go('vault-detail');
+    if (focus === 'evidence') $('#detail-evidence').scrollIntoView({ block: 'start' });
   },
 
   renderDetail() {
     const rec = this.current;
     if (!rec) { go('vault'); return; }
+    const cat = category(rec.type);
+    const details = detailsOf(rec);
+    const labels = { location: 'Location', person: 'Person involved', ...(cat.labels || {}) };
     const rows = [
-      ['Type', INCIDENT_TYPES[rec.type]],
-      ['Date & time', formatDateTime(rec.datetime)],
-      ['Location', rec.location],
-      ['Room type', ROOM_TYPES[rec.roomType] && ROOM_TYPES[rec.roomType].label],
-      ['Where', rec.spot],
-      ['Person involved', rec.person],
+      ['Date and time', formatDateTime(rec.datetime)],
+      [labels.location, rec.location],
+      ...cat.fields.map((f) => [f.label, displayValue(f, details[f.key])]),
+      [labels.person, rec.person],
       ['What happened', rec.description],
     ].filter(([, v]) => v);
+    const complaint = rec.complaint || {};
+    const complaintRows = COMPLAINT_FIELDS.filter(([key]) => complaint[key]).map(([key, label]) => [label, key === 'filedOn' ? formatDate(complaint[key]) : complaint[key]]);
     const photos = (rec.photos || []).map((p, i) => `<img src="${photoUrl(p)}" alt="Evidence photo ${i + 1}">`).join('');
-    $('#detail-body').innerHTML = `<div class="card detail">
-      <dl>${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
-      ${photos ? `<div class="detail-photos">${photos}</div>` : ''}
-      <p class="muted meta">Saved ${esc(formatDateTime(rec.createdAt))}${rec.updatedAt !== rec.createdAt ? ` · edited ${esc(formatDateTime(rec.updatedAt))}` : ''}</p>
-    </div>`;
+    const progress = protocolSummary(rec);
+    const evDone = countDone(cat.evidence.map(([id]) => id), rec.evidence);
+    const dl = (list) => `<dl>${list.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+
+    $('#detail-body').innerHTML = `
+      <div class="detail-head"><span class="cat-icon">${icon(rec.type)}</span><h2>${esc(cat.label)}</h2></div>
+      <div class="card detail">
+        ${dl(rows)}
+        ${photos ? `<div class="detail-photos">${photos}</div>` : ''}
+        <p class="muted meta">Saved ${esc(formatDateTime(rec.createdAt))}${rec.updatedAt !== rec.createdAt ? ` · edited ${esc(formatDateTime(rec.updatedAt))}` : ''}</p>
+      </div>
+      ${complaintRows.length || progress.length ? `<h3 class="group-title">Complaint</h3>
+      <div class="card detail">${complaintRows.length ? dl(complaintRows) : ''}${progress.map((p) => `<p class="progress-line">${esc(p)}</p>`).join('')}</div>` : ''}
+      <h3 class="group-title" id="detail-evidence">What counts as evidence <span class="count" id="evidence-count">${evDone} of ${cat.evidence.length}</span></h3>
+      <p class="group-note">Tick what you have collected. This is saved with the incident.</p>
+      <ul class="group checklist" id="detail-evidence-list">${evidenceHtml(cat, rec.evidence || {}, 'data-ev')}</ul>`;
+  },
+
+  async toggleEvidence(id, checked) {
+    const rec = this.current;
+    if (!rec) return;
+    rec.evidence = { ...(rec.evidence || {}), [id]: checked };
+    if (!checked) delete rec.evidence[id];
+    await DB.put(rec);
+    const cat = category(rec.type);
+    $('#evidence-count').textContent = `${countDone(cat.evidence.map(([e]) => e), rec.evidence)} of ${cat.evidence.length}`;
   },
 
   async remove() {
@@ -986,31 +1278,177 @@ const Vault = {
     if (!items.length) { alert('There are no incidents to export yet.'); return; }
     items.sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)));
     go('report');
-    const sections = items.map((rec, i) => {
-      const rows = [
-        ['Date & time', formatDateTime(rec.datetime)],
-        ['Location', rec.location],
-        ['Room type', ROOM_TYPES[rec.roomType] && ROOM_TYPES[rec.roomType].label],
-        ['Where', rec.spot],
-        ['Person involved', rec.person],
-        ['Description', rec.description],
-        ['Photos', rec.photos && rec.photos.length ? String(rec.photos.length) : 'None'],
-      ].filter(([, v]) => v);
-      const photos = (rec.photos || []).map((p, j) => `<img src="${photoUrl(p)}" alt="Incident ${i + 1}, photo ${j + 1}">`).join('');
-      return `<section class="report-incident">
-        <h2>${i + 1}. ${esc(INCIDENT_TYPES[rec.type] || 'Incident')}</h2>
-        <table>${rows.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</table>
-        ${photos ? `<div class="report-photos">${photos}</div>` : ''}
-      </section>`;
+
+    const timeline = `<h2>Timeline</h2><table class="timeline">
+      <tr><th>Date</th><th>Category</th><th>Location</th></tr>
+      ${items.map((rec) => `<tr><td>${esc(formatDateTime(rec.datetime))}</td><td>${esc(category(rec.type).label)}</td><td>${esc(rec.location || '')}</td></tr>`).join('')}
+    </table>`;
+
+    let n = 0;
+    const groups = Object.entries(CATEGORIES).map(([key, cat]) => {
+      const list = items.filter((rec) => (CATEGORIES[rec.type] ? rec.type : 'other') === key);
+      if (!list.length) return '';
+      return `<section class="report-category"><h2>${esc(cat.label)} (${list.length})</h2>${list.map((rec) => {
+        n++;
+        const details = detailsOf(rec);
+        const labels = { location: 'Location', person: 'Person involved', ...(cat.labels || {}) };
+        const complaint = rec.complaint || {};
+        const evidence = cat.evidence.filter(([id]) => rec.evidence && rec.evidence[id]).map(([, label]) => label);
+        const rows = [
+          ['Date and time', formatDateTime(rec.datetime)],
+          [labels.location, rec.location],
+          ...cat.fields.map((f) => [f.label, displayValue(f, details[f.key])]),
+          [labels.person, rec.person],
+          ['Description', rec.description],
+          ...COMPLAINT_FIELDS.map(([key, label]) => [label, key === 'filedOn' ? formatDate(complaint[key]) : complaint[key]]),
+          ['Complaint progress', protocolSummary(rec).join('\n')],
+          ['Evidence collected', evidence.join('\n')],
+          ['Photos', rec.photos && rec.photos.length ? String(rec.photos.length) : 'None'],
+        ].filter(([, v]) => v);
+        const photos = (rec.photos || []).map((p, j) => `<img src="${photoUrl(p)}" alt="Incident ${n}, photo ${j + 1}">`).join('');
+        return `<div class="report-incident">
+          <h3>${n}. ${esc(formatDateTime(rec.datetime))}</h3>
+          <table>${rows.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</table>
+          ${photos ? `<div class="report-photos">${photos}</div>` : ''}
+        </div>`;
+      }).join('')}</section>`;
     }).join('');
+
     const doc = $('#report-doc');
     doc.innerHTML = `<h1>Incident Report</h1>
       <p class="meta">Generated ${esc(formatDateTime(new Date()))} · ${items.length} incident${items.length > 1 ? 's' : ''}<br>
-      Stored only on the owner's device.</p>${sections}`;
+      Stored only on the owner's device.</p>${timeline}${groups}`;
     await Promise.all($$('img', doc).map((img) => (img.decode ? img.decode().catch(() => {}) : null)));
     if (currentView === 'report') window.print();
   },
 };
+
+function formatDate(value) {
+  const d = new Date(value + 'T00:00');
+  return isNaN(d) ? value || '' : d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+}
+
+/* ---------- Action Protocol ---------- */
+const Protocol = {
+  incident: null, // when opened from an incident, checklist progress is saved with it
+
+  async open(section = null, incidentId = null) {
+    if (incidentId != null) {
+      this.incident = Vault.current && Vault.current.id === incidentId ? Vault.current : await DB.get(incidentId);
+      Vault.current = this.incident;
+    } else {
+      this.incident = null;
+    }
+    go('protocol', { parent: this.incident ? 'vault-detail' : 'vault' });
+    if (section) {
+      const d = $(`#proto-${section}`);
+      d.open = true;
+      d.scrollIntoView({ block: 'start' });
+    }
+  },
+
+  state(key) {
+    if (this.incident) return (this.incident.protocol || {})[key] || {};
+    return store.get('protocolChecks', {})[key] || {};
+  },
+
+  render() {
+    const rec = this.incident;
+    $('#protocol-link').hidden = !rec;
+    if (rec) $('#protocol-link-text').textContent = `${category(rec.type).label}, ${formatDateTime(rec.datetime)}`;
+    $$('.proto-section').forEach((d) => { d.open = false; });
+    Object.keys(CHECKLISTS).forEach((key) => {
+      $(`[data-checklist="${key}"]`).innerHTML = this.checklistHtml(key);
+    });
+  },
+
+  checklistHtml(key) {
+    const list = CHECKLISTS[key];
+    const state = this.state(key);
+    const rec = this.incident;
+    const complaint = (rec && rec.complaint) || {};
+    const extras = {
+      evidence: rec
+        ? '<button type="button" class="btn" data-proto-act="evidence">Open evidence checklist</button>'
+        : '<button type="button" class="btn" data-go="vault">Open the Vault</button>',
+      fir: rec
+        ? `<div class="form compact">${COMPLAINT_FIELDS.slice(0, 4).map(([k, label]) =>
+            `<label class="field"><span>${esc(label)}</span><input type="${k === 'filedOn' ? 'date' : 'text'}" data-complaint="${k}" value="${esc(complaint[k] || '')}" autocomplete="off"></label>`).join('')}</div>`
+        : '<p class="muted">Open this checklist from an incident to save these details there.</p>',
+      ack: rec
+        ? `<label class="field"><span>Acknowledgement number</span><input type="text" data-complaint="ackNo" value="${esc(complaint.ackNo || '')}" autocomplete="off"></label>`
+        : '<p class="muted">Open this checklist from an incident to save the number there.</p>',
+      portal: '<a class="btn" href="https://cybercrime.gov.in" target="_blank" rel="noopener">Open cybercrime.gov.in</a>',
+      call1930: '<a class="btn" href="tel:1930">Call 1930</a>',
+    };
+    const done = countDone(list.steps.map((s) => s.id), state);
+    return `<div class="checklist-head">
+        <span class="checklist-count" data-count="${key}">${done} of ${list.steps.length} steps done</span>
+        ${rec ? '' : `<button type="button" class="btn" data-reset="${key}">Reset</button>`}
+      </div>
+      <ol class="steps-check">${list.steps.map((s) => `<li class="step">
+        <input type="checkbox" data-step="${key}:${s.id}" aria-label="${esc(s.title)}" ${state[s.id] ? 'checked' : ''}>
+        <div class="step-body">
+          <button type="button" class="step-toggle" aria-expanded="false">${esc(s.title)}${CHEVRON}</button>
+          <div class="step-more" hidden><p>${esc(s.text)}</p>${s.extra ? extras[s.extra] : ''}</div>
+        </div>
+      </li>`).join('')}</ol>`;
+  },
+
+  async toggle(key, stepId, checked) {
+    if (this.incident) {
+      const protocol = this.incident.protocol || (this.incident.protocol = {});
+      const state = protocol[key] || (protocol[key] = {});
+      if (checked) state[stepId] = true; else delete state[stepId];
+      await DB.put(this.incident);
+    } else {
+      const all = store.get('protocolChecks', {});
+      all[key] = all[key] || {};
+      if (checked) all[key][stepId] = true; else delete all[key][stepId];
+      store.set('protocolChecks', all);
+    }
+    const list = CHECKLISTS[key];
+    $(`[data-count="${key}"]`).textContent = `${countDone(list.steps.map((s) => s.id), this.state(key))} of ${list.steps.length} steps done`;
+  },
+
+  reset(key) {
+    const all = store.get('protocolChecks', {});
+    delete all[key];
+    store.set('protocolChecks', all);
+    $(`[data-checklist="${key}"]`).innerHTML = this.checklistHtml(key);
+  },
+
+  async saveComplaint(field, value) {
+    if (!this.incident) return;
+    this.incident.complaint = { ...(this.incident.complaint || {}), [field]: value.trim() };
+    if (!value.trim()) delete this.incident.complaint[field];
+    await DB.put(this.incident);
+  },
+};
+
+/* ================================================================== */
+/* Settings                                                           */
+/* ================================================================== */
+const autoLockMs = () => store.get('autoLockMs', AUTO_LOCK_MS);
+
+async function renderSettings() {
+  $('#autolock').value = String(autoLockMs());
+  $('#delete-confirm').hidden = true;
+  $('#delete-all').hidden = false;
+  const info = $('#storage-info');
+  try {
+    const items = await DB.all();
+    const photos = items.reduce((n, rec) => n + (rec.photos ? rec.photos.length : 0), 0);
+    let text = `${items.length} incident${items.length === 1 ? '' : 's'} and ${photos} photo${photos === 1 ? '' : 's'} saved.`;
+    if (navigator.storage && navigator.storage.estimate) {
+      const { usage } = await navigator.storage.estimate();
+      if (usage) text += ` About ${(usage / 1024 / 1024).toFixed(1)} MB used on this phone.`;
+    }
+    info.textContent = text;
+  } catch {
+    info.textContent = '';
+  }
+}
 
 /* ================================================================== */
 /* SOS Setup                                                          */
@@ -1046,15 +1484,13 @@ function updateSosCount() {
 let hiddenAt = 0;
 
 function init() {
-  // Lock screen
+  // PIN setup
   $('#keypad').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-d]');
     if (b) Lock.press(b.dataset.d);
   });
   $('#lock-cancel').addEventListener('click', () => Lock.unlock());
   $('#lock-continue').addEventListener('click', () => Calc.show());
-  $('#lock-now').addEventListener('click', () => Calc.show());
-  $('#change-pin').addEventListener('click', () => Lock.show('verify-old'));
 
   // Calculator / quick exit
   $('#quick-exit').addEventListener('click', () => Calc.show());
@@ -1075,6 +1511,21 @@ function init() {
     const parent = $(`.view[data-view="${currentView}"]`).dataset.parent;
     if (parent) go(parent);
   });
+
+  // Settings
+  $('#change-pin').addEventListener('click', () => Lock.show('verify-old'));
+  $('#lock-now').addEventListener('click', () => Calc.show());
+  $('#autolock').addEventListener('change', (e) => store.set('autoLockMs', Number(e.target.value)));
+  $('#delete-all').addEventListener('click', () => {
+    $('#delete-all').hidden = true;
+    $('#delete-confirm').hidden = false;
+    $('#delete-confirm').scrollIntoView({ block: 'center' });
+  });
+  $('#delete-cancel').addEventListener('click', () => {
+    $('#delete-confirm').hidden = true;
+    $('#delete-all').hidden = false;
+  });
+  $('#delete-confirm-btn').addEventListener('click', resetEverything);
 
   // Room check
   $('#room-ack').addEventListener('click', () => { roomAcknowledged = true; go(room.type ? 'room-check' : 'room-type'); });
@@ -1121,16 +1572,22 @@ function init() {
   $('#sheet-evidence').addEventListener('click', adviceToEvidence);
 
   // Vault
-  $('#f-roomtype').innerHTML = '<option value="">—</option>' +
-    Object.entries(ROOM_TYPES).map(([k, t]) => `<option value="${k}">${esc(t.label)}</option>`).join('');
+  $('#f-type').innerHTML = Object.entries(CATEGORIES).map(([k, c]) => `<option value="${k}">${esc(c.label)}</option>`).join('');
   $('#add-incident').addEventListener('click', () => Vault.openForm());
   $('#export-btn').addEventListener('click', () => Vault.exportReport());
+  $('#open-protocol').addEventListener('click', () => Protocol.open());
   $('#print-btn').addEventListener('click', () => window.print());
+  $('#vault-filters').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-filter]');
+    if (!b) return;
+    Vault.filter = b.dataset.filter;
+    Vault.renderList();
+  });
   $('#incident-list').addEventListener('click', (e) => {
     const b = e.target.closest('[data-id]');
     if (b) Vault.showDetail(Number(b.dataset.id));
   });
-  $('#f-type').addEventListener('change', () => Vault.toggleCameraFields());
+  $('#f-type').addEventListener('change', () => Vault.changeType());
   $('#photo-camera').addEventListener('change', (e) => Vault.addFiles(e.target));
   $('#photo-library').addEventListener('change', (e) => Vault.addFiles(e.target));
   $('#photo-grid').addEventListener('click', (e) => {
@@ -1140,8 +1597,41 @@ function init() {
     Vault.renderPhotos();
   });
   $('#incident-form').addEventListener('submit', (e) => Vault.save(e));
+  $('#detail-body').addEventListener('change', (e) => {
+    if (e.target.dataset.ev) Vault.toggleEvidence(e.target.dataset.ev, e.target.checked);
+  });
+  $('#detail-next').addEventListener('click', () => {
+    if (Vault.current) Protocol.open(category(Vault.current.type).protocol, Vault.current.id);
+  });
   $('#detail-edit').addEventListener('click', () => Vault.current && Vault.openForm(Vault.current));
   $('#detail-delete').addEventListener('click', () => Vault.remove());
+
+  // Action Protocol
+  const proto = $('.view[data-view="protocol"]');
+  proto.addEventListener('click', (e) => {
+    const toggle = e.target.closest('.step-toggle');
+    if (toggle) {
+      const more = toggle.nextElementSibling;
+      more.hidden = !more.hidden;
+      toggle.setAttribute('aria-expanded', String(!more.hidden));
+      return;
+    }
+    const reset = e.target.closest('[data-reset]');
+    if (reset) { Protocol.reset(reset.dataset.reset); return; }
+    if (e.target.closest('[data-proto-act="evidence"]') && Protocol.incident) {
+      Vault.showDetail(Protocol.incident.id, { focus: 'evidence' });
+    }
+  });
+  proto.addEventListener('change', (e) => {
+    const step = e.target.dataset.step;
+    if (step) {
+      const [key, id] = step.split(':');
+      Protocol.toggle(key, id, e.target.checked);
+    } else if (e.target.dataset.complaint) {
+      Protocol.saveComplaint(e.target.dataset.complaint, e.target.value);
+    }
+  });
+  $('#protocol-back').addEventListener('click', () => go('vault-detail'));
 
   // SOS
   $('#sos-install').href = SOS_SHORTCUT_URL;
@@ -1155,7 +1645,7 @@ function init() {
     updateSosCount();
   });
 
-  // Background: cameras off and calculator cover; over AUTO_LOCK_MS away needs the PIN again
+  // Background: cameras off and calculator cover; away longer than the auto-lock time needs the PIN again
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       hiddenAt = Date.now();
@@ -1163,7 +1653,7 @@ function init() {
       IR.stop();
       Privacy.cover();
     } else {
-      Privacy.restore(hiddenAt > 0 && Date.now() - hiddenAt > AUTO_LOCK_MS);
+      Privacy.restore(hiddenAt > 0 && Date.now() - hiddenAt >= autoLockMs());
     }
   });
 

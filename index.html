@@ -76,46 +76,32 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
     </button>
     <h1 id="view-title">SheSafe</h1>
+    <button type="button" id="settings-btn" class="icon-btn" data-go="settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
   </header>
 
   <main id="main">
 
     <!-- HOME -->
     <section class="view" data-view="home" data-title="SheSafe" data-tab="home">
-      <p class="intro">Everything you save stays on this phone. Nothing is uploaded.</p>
+      <button type="button" class="feature" data-go="room">
+        <span class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></span>
+        <span class="feature-text"><span class="feature-title">Room Check</span><span class="feature-sub">Look for hidden cameras before you settle in</span></span>
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button type="button" class="feature" data-go="vault">
+        <span class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+        <span class="feature-text"><span class="feature-title">Evidence Vault</span><span class="feature-sub">Record incidents privately and prepare a complaint</span></span>
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button type="button" class="feature sos" data-go="sos">
+        <span class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
+        <span class="feature-text"><span class="feature-title">SOS</span><span class="feature-sub">Alert your contacts with one press</span></span>
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
 
-      <ul class="group">
-        <li><button type="button" class="row" data-go="room">
-          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></span>
-          <span class="row-text"><span class="row-title">Room check</span><span class="row-sub">Look for hidden cameras</span></span>
-          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-        </button></li>
-        <li><button type="button" class="row" data-go="vault">
-          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
-          <span class="row-text"><span class="row-title">Evidence vault</span><span class="row-sub">Record incidents and photos</span></span>
-          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-        </button></li>
-        <li><button type="button" class="row" data-go="sos">
-          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
-          <span class="row-text"><span class="row-title">SOS setup</span><span class="row-sub">Set up a one-press emergency shortcut</span></span>
-          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-        </button></li>
-      </ul>
-
-      <a class="btn danger block" href="tel:112">Call 112</a>
-
-      <h2 class="group-title">Privacy</h2>
-      <ul class="group">
-        <li><button type="button" class="row" id="lock-now">
-          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
-          <span class="row-text"><span class="row-title">Lock now</span><span class="row-sub">Go back to the calculator</span></span>
-        </button></li>
-        <li><button type="button" class="row" id="change-pin">
-          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M17 6l2 2M14 9l2 2"/></svg></span>
-          <span class="row-text"><span class="row-title">Change PIN</span></span>
-        </button></li>
-      </ul>
-      <p class="group-note">To open the app from the calculator, type your PIN and press =. Quick exit, or leaving the app for over a minute, returns to the calculator.</p>
+      <a class="call-bar" href="tel:112"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>Call 112</a>
     </section>
 
     <!-- ROOM: WARNING -->
@@ -234,14 +220,22 @@
     </section>
 
     <!-- VAULT: LIST -->
-    <section class="view" data-view="vault" data-title="Evidence vault" data-tab="vault" hidden>
-      <p class="intro">Stored only on this phone and never uploaded. Deleting the app or clearing Safari data deletes it, so export regularly.</p>
+    <section class="view" data-view="vault" data-title="Evidence Vault" data-tab="vault" hidden>
       <div class="btn-row">
         <button type="button" class="btn primary" id="add-incident">Add incident</button>
         <button type="button" class="btn" id="export-btn">Export report</button>
       </div>
+      <ul class="group">
+        <li><button type="button" class="row" id="open-protocol">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg></span>
+          <span class="row-text"><span class="row-title">Action protocol</span><span class="row-sub">What to do next, step by step</span></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button></li>
+      </ul>
+      <div class="chips" id="vault-filters" role="group" aria-label="Filter by category"></div>
       <ul class="group incident-list" id="incident-list"></ul>
       <p class="empty" id="vault-empty" hidden>No incidents saved yet.</p>
+      <p class="group-note">Stored only on this phone and never uploaded. Export a report regularly to keep a copy.</p>
 
       <h2 class="group-title">Helplines (India)</h2>
       <ul class="group">
@@ -257,35 +251,20 @@
     <section class="view" data-view="vault-form" data-title="New incident" data-tab="vault" data-parent="vault" hidden>
       <form id="incident-form" class="form" novalidate>
         <label class="field">
-          <span>Type</span>
-          <select name="type" id="f-type">
-            <option value="online">Online harassment</option>
-            <option value="stalking">Stalking</option>
-            <option value="camera">Hidden camera</option>
-            <option value="physical">Physical harassment</option>
-            <option value="other">Other</option>
-          </select>
+          <span>Category</span>
+          <select name="type" id="f-type"></select>
         </label>
         <label class="field">
           <span>Date and time</span>
           <input type="datetime-local" name="datetime" required>
         </label>
         <label class="field">
-          <span>Location</span>
-          <input type="text" name="location" placeholder="For example: hotel name, room 204, city" autocomplete="off">
+          <span id="label-location">Location</span>
+          <input type="text" name="location" autocomplete="off">
         </label>
-        <div id="camera-fields">
-          <label class="field">
-            <span>Room type</span>
-            <select name="roomType" id="f-roomtype"></select>
-          </label>
-          <label class="field">
-            <span>Where was it?</span>
-            <input type="text" name="spot" placeholder="For example: smoke detector" autocomplete="off">
-          </label>
-        </div>
+        <div id="category-fields" class="form"></div>
         <label class="field">
-          <span>Person involved (optional)</span>
+          <span id="label-person">Person involved (optional)</span>
           <input type="text" name="person" placeholder="Name, username or description" autocomplete="off">
         </label>
         <label class="field">
@@ -294,13 +273,30 @@
         </label>
 
         <fieldset class="field photos">
-          <legend>Photos</legend>
+          <legend id="label-photos">Photos</legend>
           <div class="photo-grid" id="photo-grid"></div>
           <div class="btn-row">
             <label class="btn">Take photo<input type="file" id="photo-camera" class="visually-hidden" accept="image/*" capture="environment"></label>
             <label class="btn">Choose photos<input type="file" id="photo-library" class="visually-hidden" accept="image/*" multiple></label>
           </div>
         </fieldset>
+
+        <fieldset class="field">
+          <legend>What counts as evidence</legend>
+          <p class="muted">Tick what you have collected.</p>
+          <ul class="group checklist" id="form-evidence"></ul>
+        </fieldset>
+
+        <details class="group guide" id="complaint-fields">
+          <summary><span class="row-text"><span class="row-title">Police complaint</span><span class="row-sub">FIR number, police station, officer, date</span></span></summary>
+          <div class="form compact">
+            <label class="field"><span>FIR number</span><input type="text" name="c-fir" autocomplete="off"></label>
+            <label class="field"><span>Police station</span><input type="text" name="c-station" autocomplete="off"></label>
+            <label class="field"><span>Officer name</span><input type="text" name="c-officer" autocomplete="off"></label>
+            <label class="field"><span>Date filed</span><input type="date" name="c-filedOn"></label>
+            <label class="field"><span>Other complaint or acknowledgement number</span><input type="text" name="c-ackNo" autocomplete="off"></label>
+          </div>
+        </details>
 
         <button type="submit" class="btn primary block">Save incident</button>
       </form>
@@ -309,8 +305,9 @@
     <!-- VAULT: DETAIL -->
     <section class="view" data-view="vault-detail" data-title="Incident" data-tab="vault" data-parent="vault" hidden>
       <div id="detail-body"></div>
+      <button type="button" class="btn primary block" id="detail-next">What to do next</button>
       <div class="btn-row">
-        <button type="button" class="btn primary" id="detail-edit">Edit</button>
+        <button type="button" class="btn" id="detail-edit">Edit</button>
         <button type="button" class="btn danger" id="detail-delete">Delete</button>
       </div>
     </section>
@@ -322,6 +319,163 @@
         <button type="button" class="btn primary block" id="print-btn">Print or save as PDF</button>
       </div>
       <article id="report-doc" class="report-doc"></article>
+    </section>
+
+    <!-- VAULT: ACTION PROTOCOL -->
+    <section class="view" data-view="protocol" data-title="Action protocol" data-tab="vault" data-parent="vault" hidden>
+      <div class="card legal">
+        <p><strong>General information, not legal advice.</strong> Laws and procedures can change. Talk to a lawyer, legal aid service or the NCW for your situation.</p>
+      </div>
+
+      <div class="card linked" id="protocol-link" hidden>
+        <p>Linked to <strong id="protocol-link-text"></strong>. Ticks and complaint details are saved with this incident.</p>
+        <button type="button" class="btn" id="protocol-back">Back to incident</button>
+      </div>
+
+      <div class="group">
+        <details class="guide proto-section" id="proto-danger">
+          <summary><span class="row-text"><span class="row-title">A. If you are in danger right now</span></span></summary>
+          <div class="proto-body">
+            <a class="btn danger block" href="tel:112">Call 112</a>
+            <ol class="steps">
+              <li>Call 112.</li>
+              <li>Get to a safe place: a shop, a police station, a hospital, or anywhere with people around.</li>
+              <li>Tell someone you trust where you are.</li>
+              <li>When you are safe, record what happened in the Vault while it is fresh.</li>
+            </ol>
+          </div>
+        </details>
+
+        <details class="guide proto-section" id="proto-police">
+          <summary><span class="row-text"><span class="row-title">B. File a police complaint</span><span class="row-sub">Checklist</span></span></summary>
+          <div class="proto-body">
+            <div data-checklist="police"></div>
+            <h3 class="proto-subtitle">Your rights</h3>
+            <ul class="steps">
+              <li>You can file an FIR at any police station. If it happened elsewhere, a Zero FIR is registered and transferred (BNSS Section 173).</li>
+              <li>For a cognizable offence, the police must register the FIR.</li>
+              <li>You get a free copy of the FIR.</li>
+              <li>For sexual offences, your statement should be recorded by a woman officer.</li>
+              <li>If the police refuse, write to the Superintendent of Police, or apply to the Magistrate.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="guide proto-section" id="proto-cyber">
+          <summary><span class="row-text"><span class="row-title">C. Online and cyber crimes</span><span class="row-sub">Checklist</span></span></summary>
+          <div class="proto-body">
+            <div data-checklist="cyber"></div>
+          </div>
+        </details>
+
+        <details class="guide proto-section" id="proto-posh">
+          <summary><span class="row-text"><span class="row-title">D. Workplace harassment (POSH Act 2013)</span><span class="row-sub">Checklist</span></span></summary>
+          <div class="proto-body">
+            <div data-checklist="posh"></div>
+          </div>
+        </details>
+
+        <details class="guide proto-section" id="proto-laws">
+          <summary><span class="row-text"><span class="row-title">E. Relevant laws</span><span class="row-sub">For reference</span></span></summary>
+          <div class="proto-body">
+            <p>Bharatiya Nyaya Sanhita (BNS), 2023. Old IPC sections in brackets.</p>
+            <ul class="law-list">
+              <li><strong>BNS 74</strong> (IPC 354): assault or criminal force to outrage a woman’s modesty</li>
+              <li><strong>BNS 75</strong> (IPC 354A): sexual harassment</li>
+              <li><strong>BNS 77</strong> (IPC 354C): voyeurism</li>
+              <li><strong>BNS 78</strong> (IPC 354D): stalking</li>
+              <li><strong>BNS 79</strong> (IPC 509): words, gestures or acts intended to insult a woman’s modesty</li>
+              <li><strong>BNS 351</strong> (IPC 503, 506): criminal intimidation (threats)</li>
+              <li><strong>BNS 308</strong> (IPC 383, 384): extortion (blackmail)</li>
+            </ul>
+            <p>Information Technology Act, 2000.</p>
+            <ul class="law-list">
+              <li><strong>Section 66E</strong>: capturing or publishing private images without consent</li>
+              <li><strong>Section 67</strong>: publishing or sending obscene material electronically</li>
+              <li><strong>Section 67A</strong>: publishing or sending sexually explicit material electronically</li>
+            </ul>
+            <p class="muted">Procedure is now under the Bharatiya Nagarik Suraksha Sanhita (BNSS), which replaced the CrPC, and evidence under the Bharatiya Sakshya Adhiniyam (BSA), which replaced the Evidence Act.</p>
+          </div>
+        </details>
+
+        <details class="guide proto-section" id="proto-strengthen">
+          <summary><span class="row-text"><span class="row-title">F. Strengthen your case</span></span></summary>
+          <div class="proto-body">
+            <ul class="steps">
+              <li>Record incidents as soon as possible, with exact dates and times.</li>
+              <li>Keep originals. Don’t edit, crop or forward screenshots in a way that loses detail.</li>
+              <li>Note witnesses and their contact details.</li>
+              <li>Ask for CCTV footage quickly. It is often overwritten within weeks.</li>
+              <li>Electronic evidence used in court may need a certificate under Section 63 of the Bharatiya Sakshya Adhiniyam. Keep the original device or files.</li>
+              <li>Get a medical examination soon after any physical assault.</li>
+              <li>Keep copies of every complaint, acknowledgement and FIR number.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="guide proto-section" id="proto-help">
+          <summary><span class="row-text"><span class="row-title">G. Help and support</span></span></summary>
+          <div class="proto-body flush">
+            <ul class="group">
+              <li><a class="row helpline" href="tel:112"><span class="row-text"><span class="row-title">112</span><span class="row-sub">Emergency</span></span></a></li>
+              <li><a class="row helpline" href="tel:181"><span class="row-text"><span class="row-title">181</span><span class="row-sub">Women helpline</span></span></a></li>
+              <li><a class="row helpline" href="tel:1930"><span class="row-text"><span class="row-title">1930</span><span class="row-sub">Cyber crime helpline</span></span></a></li>
+              <li><a class="row helpline" href="tel:7827170170"><span class="row-text"><span class="row-title">7827 170 170</span><span class="row-sub">National Commission for Women (NCW) helpline</span></span></a></li>
+              <li><a class="row helpline" href="https://ncwapps.nic.in/onlinecomplaintsv2/" target="_blank" rel="noopener"><span class="row-text"><span class="row-title">NCW complaint portal</span><span class="row-sub">File a complaint online</span></span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a></li>
+              <li><a class="row helpline" href="tel:15100"><span class="row-text"><span class="row-title">15100</span><span class="row-sub">Free legal aid (NALSA). Or visit your District Legal Services Authority.</span></span></a></li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" data-view="settings" data-title="Settings" data-parent="home" hidden>
+      <h2 class="group-title first">Security</h2>
+      <ul class="group">
+        <li><button type="button" class="row" id="change-pin">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M17 6l2 2M14 9l2 2"/></svg></span>
+          <span class="row-text"><span class="row-title">Change PIN</span></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button></li>
+        <li><label class="row" for="autolock">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <span class="row-text"><span class="row-title">Auto-lock</span><span class="row-sub">Back to the calculator after leaving the app</span></span>
+          <select id="autolock" class="row-select">
+            <option value="0">Immediately</option>
+            <option value="30000">30 seconds</option>
+            <option value="60000">1 minute</option>
+            <option value="300000">5 minutes</option>
+          </select>
+        </label></li>
+        <li><button type="button" class="row" id="lock-now">
+          <span class="row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <span class="row-text"><span class="row-title">Lock now</span><span class="row-sub">Go back to the calculator</span></span>
+        </button></li>
+      </ul>
+
+      <h2 class="group-title">How it works</h2>
+      <div class="group info-list">
+        <div class="info"><h3>Unlocking</h3><p>The app always opens as a calculator. Type your 4-digit PIN, then press =.</p></div>
+        <div class="info"><h3>Quick exit</h3><p>Tap Quick exit in the bottom bar to switch to the calculator straight away. The screen you were on is closed.</p></div>
+        <div class="info"><h3>Forgot PIN</h3><p>A PIN cannot be recovered. On the calculator, hold AC for 5 seconds. This wipes all data so you can set a new PIN.</p></div>
+      </div>
+
+      <h2 class="group-title">Storage</h2>
+      <div class="card">
+        <p>Everything stays on this phone. Nothing is uploaded or backed up. Deleting the app or clearing Safari website data deletes it, so export a report from the Vault to keep a copy.</p>
+        <p class="muted" id="storage-info"></p>
+      </div>
+
+      <button type="button" class="btn danger block" id="delete-all">Delete all data</button>
+      <div class="card warn" id="delete-confirm" hidden>
+        <h3 class="card-title">Delete everything?</h3>
+        <p>This permanently deletes your PIN, all incidents and photos, checklists and settings on this phone. It cannot be undone.</p>
+        <div class="btn-row">
+          <button type="button" class="btn" id="delete-cancel">Cancel</button>
+          <button type="button" class="btn danger" id="delete-confirm-btn">Delete everything</button>
+        </div>
+      </div>
     </section>
 
     <!-- SOS -->
