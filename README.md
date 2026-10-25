@@ -1,8 +1,8 @@
-# SheSafe
+# SafeHer
 
 A private safety toolkit for women in India, built as a Progressive Web App (PWA) for iPhone. On the home screen and in the app switcher it looks like an ordinary calculator. Typing a secret PIN on the calculator and pressing `=` opens the real app.
 
-SheSafe has three core tools:
+SafeHer has three core tools:
 
 - **Room Check**: a guided search for hidden cameras in hotel rooms, bathrooms, trial rooms, PGs and homestays, with a lens-reflection camera scan.
 - **Evidence Vault**: a private, on-device record of incidents with photos, evidence checklists, complaint tracking and a printable report.
@@ -164,7 +164,7 @@ The whole app is static files and can be hosted anywhere that serves HTTPS.
 ## Project structure
 
 ```
-SheSafe/
+SafeHer/
 ├── index.html        All screens: calculator, PIN setup, and the app views
 ├── styles.css        Design tokens, light and dark themes, all component styles
 ├── app.js            All app logic (see below)
@@ -275,8 +275,6 @@ The shortcut itself is built in the iOS Shortcuts app and shared as an iCloud li
 | localStorage | `safeher.room`, `safeher.sensitivity` | Room check progress and lens scan sensitivity |
 | localStorage | `safeher.sosChecks`, `safeher.protocolChecks` | SOS test checklist and standalone protocol checklists |
 
-The storage names still use the old name `safeher`. Renaming them would make existing installs lose their data and their PIN would stop matching, and the names are never shown to users.
-
 **Photos** are stored as raw bytes (`ArrayBuffer` plus MIME type) rather than `Blob` objects, because Safari has historically had bugs with Blobs saved in IndexedDB. They are turned back into Blobs for display and released when you leave a screen.
 
 **Persistence.** After the first save, the app asks the browser for persistent storage (`navigator.storage.persist()`). Home-screen web apps on iOS are not subject to Safari's 7-day storage limit, but deleting the app or clearing Safari website data deletes everything. Users should export a report regularly.
@@ -287,7 +285,7 @@ The storage names still use the old name `safeher`. Renaming them would make exi
 
 ## Security model and limitations
 
-SheSafe is designed to protect against **someone casually picking up or looking at the phone**: a partner, family member, colleague or stranger. It is **not** designed to resist a determined attacker with forensic tools or unlocked access to the phone's files.
+SafeHer is designed to protect against **someone casually picking up or looking at the phone**: a partner, family member, colleague or stranger. It is **not** designed to resist a determined attacker with forensic tools or unlocked access to the phone's files.
 
 - **PIN strength.** A 4-digit PIN has 10,000 combinations. The hash is salted and iterated (1,000 rounds of SHA-256), but anyone who can read the app's storage could try every PIN in seconds. The 30-second throttle only slows guessing through the calculator.
 - **Data is not encrypted.** Incidents and photos are stored in the browser's normal storage. They are protected by the phone's own passcode and iOS data protection, not by the app's PIN.
@@ -303,7 +301,7 @@ SheSafe is designed to protect against **someone casually picking up or looking 
 
 When you change files:
 
-1. **Bump `CACHE_NAME`** in `sw.js` (for example `calc-v5` → `calc-v6`). Old caches are deleted when the new service worker activates.
+1. **Bump `CACHE_NAME`** in `sw.js` (for example `calc-v6` → `calc-v7`). Old caches are deleted when the new service worker activates.
 2. If you add, rename or remove a file, update the `ASSETS` list in `sw.js`.
 
 Installed copies pick up changes after one or two launches while online.
@@ -386,7 +384,7 @@ The source image appears to be stock clip art. Check its licence before publishi
 - **`window.print()` in a home-screen web app** may not open the print dialog on every iOS version. The report screen has a **Print or save as PDF** button, and Share → Print also works.
 - **Camera permission** may be asked again on each launch of a home-screen web app on iOS.
 - **Taking a photo** from the incident form may briefly send the app to the background on some iOS versions. With auto-lock set to "Immediately", this could lock the app; the form's contents are kept.
-- **The SOS shortcut** runs in Apple's Shortcuts app. SheSafe can only link to it and explain setup; it cannot trigger or test it.
+- **The SOS shortcut** runs in Apple's Shortcuts app. SafeHer can only link to it and explain setup; it cannot trigger or test it.
 - **iOS caches the installed name and icon.** Reinstall after changing them.
 
 ---
@@ -411,7 +409,7 @@ All of this content should be reviewed by a qualified lawyer or legal aid servic
 
 - Keep it dependency-free: no frameworks, no build step.
 - Match the existing style: solid colours, no gradients or emojis, inline SVG line icons, the CSS variables in `styles.css`, plain and direct copy.
-- Nothing visible before unlock may mention SheSafe, safety, SOS or anything similar.
+- Nothing visible before unlock may mention SafeHer, safety, SOS or anything similar.
 - Escape all user-entered text with `esc()` before inserting it into HTML.
 - Bump `CACHE_NAME` in `sw.js` with every change to app files.
 - Commit messages are short and plain and describe the change.

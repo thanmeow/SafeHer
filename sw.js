@@ -1,6 +1,6 @@
 // Service worker: precaches the app shell so it works fully offline.
 // Bump CACHE_NAME whenever you add/rename files in ASSETS.
-const CACHE_NAME = 'calc-v5';
+const CACHE_NAME = 'calc-v6';
 const ASSETS = [
   './',
   './index.html',
